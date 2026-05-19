@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TYT Matematik — Showcase</title>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap">
+
+  <style>
+    :root {
+      --bg: #08081A;
+      --bg-2: #0F0E2A;
+      --text: #ECEAFE;
+      --text-sec: #8E8BB0;
+      --accent: #7C77FF;
+      --accent-2: #5EE9B5;
+      --border: rgba(255,255,255,0.08);
+      font-family: 'Nunito', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    body {
+      background:
+        radial-gradient(60% 50% at 90% -10%, rgba(124,119,255,0.20), transparent 60%),
+        radial-gradient(50% 40% at -10% 100%, rgba(94,233,181,0.10), transparent 70%),
+        var(--bg);
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 48px 32px 80px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 32px;
+      margin-bottom: 56px;
+      flex-wrap: wrap;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 64px);
+      font-weight: 900;
+      letter-spacing: -0.025em;
+      line-height: 1.02;
+      max-width: 720px;
+    }
+    .hero h1 .grad {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero .lede {
+      font-size: 17px;
+      color: var(--text-sec);
+      max-width: 480px;
+      line-height: 1.5;
+      margin-top: 14px;
+    }
+    .hero .meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .meta-chip {
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-sec);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .meta-chip .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .meta-chip.unit-1 .dot { background: #FF6B6B; }
+    .meta-chip.unit-2 .dot { background: #7C77FF; }
+    .meta-chip.unit-3 .dot { background: #45B7D1; }
+    .meta-chip.unit-4 .dot { background: #5EE9B5; }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-shrink: 0;
+      margin-top: 8px;
+    }
+    .btn {
+      padding: 12px 22px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 180ms;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), #5852D9);
+      border-color: transparent;
+      color: #08081A;
+      box-shadow: 0 8px 24px rgba(124,119,255,0.35);
+    }
+
+    /* ── FRAMES STAGE ── */
+    .stage {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 56px;
+      flex-wrap: wrap;
+      padding: 32px 0;
+    }
+
+    /* iPhone */
+    .iphone {
+      width: 380px;
+      height: 800px;
+      border-radius: 56px;
+      padding: 12px;
+      background: linear-gradient(160deg, #1B1A36, #060614);
+      box-shadow:
+        0 0 0 2px rgba(255,255,255,0.06),
+        0 60px 80px -20px rgba(0,0,0,0.7),
+        0 30px 40px -20px rgba(124,119,255,0.25);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .iphone::after {
+      content: '';
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 32px;
+      background: #000;
+      border-radius: 24px;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .iphone .screen-wrap {
+      width: 100%;
+      height: 100%;
+      border-radius: 44px;
+      overflow: hidden;
+      background: #0A0918;
+      position: relative;
+    }
+    .iphone iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+
+    /* iPad */
+    .ipad {
+      width: 720px;
+      height: 940px;
+      border-radius: 36px;
+      padding: 16px;
+      background: linear-gradient(160deg, #1B1A36, #060614);
+      box-shadow:
+        0 0 0 2px rgba(255,255,255,0.06),
+        0 60px 80px -20px rgba(0,0,0,0.7),
+        0 30px 40px -20px rgba(94,233,181,0.18);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .ipad .screen-wrap {
+      width: 100%;
+      height: 100%;
+      border-radius: 22px;
+      overflow: hidden;
+      background: #0A0918;
+      position: relative;
+    }
+    .ipad iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+    .ipad .camera {
+      position: absolute;
+      top: 50%;
+      left: 8px;
+      transform: translateY(-50%);
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #2A2A4A;
+      z-index: 3;
+    }
+
+    .device-label {
+      position: absolute;
+      bottom: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-sec);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* ── FEATURE STRIP ── */
+    .features {
+      margin-top: 100px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    .feature {
+      padding: 24px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+    }
+    .feature .ico {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #5852D9);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      font-size: 18px;
+      color: #08081A;
+      font-weight: 900;
+    }
+    .feature h3 {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .feature p {
+      font-size: 13px;
+      color: var(--text-sec);
+      line-height: 1.5;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      margin-top: 80px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-sec);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    @media (max-width: 1100px) {
+      .stage { gap: 32px; }
+      .ipad { width: 560px; height: 760px; }
+      .features { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .page { padding: 24px 16px 60px; }
+      .iphone { width: 320px; height: 680px; border-radius: 44px; }
+      .iphone::after { width: 100px; height: 26px; top: 18px; }
+      .iphone .screen-wrap { border-radius: 36px; }
+      .ipad { display: none; }
+      .features { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+
+    <section class="hero">
+      <div>
+        <h1>Korkma, anla.<br><span class="grad">Pratik yap.</span></h1>
+        <p class="lede">
+          TYT Matematik için tasarlanmış interaktif öğrenme deneyimi.
+          125 konu, 4 ünite, hızlı quiz'ler, anlık geri bildirim ve oyunlaştırılmış ilerleme — hepsi tek bir uygulamada.
+        </p>
+        <div class="meta">
+          <span class="meta-chip unit-1"><span class="dot"></span>17 Sayılar</span>
+          <span class="meta-chip unit-2"><span class="dot"></span>70 Cebir</span>
+          <span class="meta-chip unit-3"><span class="dot"></span>4 Veri</span>
+          <span class="meta-chip unit-4"><span class="dot"></span>34 Geometri</span>
+        </div>
+      </div>
+      <div class="actions">
+        <a class="btn primary" href="app/index.html" target="_blank">Uygulamayı Aç →</a>
+        <button class="btn" id="toggle-tweaks">Tweaks</button>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="iphone">
+        <div class="screen-wrap">
+          <iframe id="iphone-frame" src="app/index.html#dashboard" title="TYT Matematik iPhone"></iframe>
+        </div>
+        <div class="device-label">iPhone · Mobil görünüm</div>
+      </div>
+
+      <div class="ipad">
+        <div class="camera"></div>
+        <div class="screen-wrap">
+          <iframe id="ipad-frame" src="app/index.html#topic" title="TYT Matematik iPad"></iframe>
+        </div>
+        <div class="device-label">iPad · Geniş ekran</div>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="feature">
+        <div class="ico">∑</div>
+        <h3>KaTeX Form&uuml;ller</h3>
+        <p>Matematiksel ifadeler net ve profesyonel render. Karma&scaron;&#x131;k denklemler bile tek bak&#x131;&scaron;ta okunur.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">⚡</div>
+        <h3>An&#x131;nda Geri Bildirim</h3>
+        <p>Her quiz sorusundan sonra do&#x11f;ru cevap ve a&ccedil;&#x131;klama. Yanl&#x131;&scaron;tan &ouml;&#x11f;ren, devam et.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">🏆</div>
+        <h3>Oyunla&scaron;t&#x131;rma</h3>
+        <p>XP, seviye, 7 rozet ve g&uuml;nl&uuml;k seri. Motivasyon her zaman elinin alt&#x131;nda.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">📱</div>
+        <h3>Mobil &Ouml;ncelikli</h3>
+        <p>Telefon, tablet ve masa&uuml;st&uuml;nde sorunsuz &ccedil;al&#x131;&scaron;an PWA. Hi&ccedil;bir &scaron;ey indirme yok.</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div>
+        <strong style="color:var(--text)">TYT Matematik</strong>
+        · 125 konu · 8 tam içerik · Demo verisi yüklü
+      </div>
+      <div>
+        <a href="app/index.html" style="color:var(--accent);text-decoration:none" target="_blank">Tam ekran aç →</a>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+    // Toggle tweaks panel inside the iframe
+    let tweaksOn = false;
+    document.getElementById('toggle-tweaks').addEventListener('click', () => {
+      tweaksOn = !tweaksOn;
+      const frames = [document.getElementById('iphone-frame'), document.getElementById('ipad-frame')];
+      frames.forEach(f => {
+        try {
+          f.contentWindow.postMessage({ type: tweaksOn ? '__activate_edit_mode' : '__deactivate_edit_mode' }, '*');
+        } catch (e) {}
+      });
+    });
+
+    // iPad: navigate to topic detail on load for variety
+    document.getElementById('ipad-frame').addEventListener('load', function() {
+      setTimeout(() => {
+        try {
+          const win = this.contentWindow;
+          // open topic 5 (Ardışık Sayılar) as showcase
+          if (win.openTopic) win.openTopic(5);
+        } catch (e) {}
+      }, 600);
+    }.bind(document.getElementById('ipad-frame')));
+  </script>
+</body>
+</html>
