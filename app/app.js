@@ -358,11 +358,9 @@ function renderGeometryViewer() {
         </div>
       </div>
       <div class="geometry-viewer-stage" data-geometry-swipe>
-        <button class="geometry-viewer-nav prev" data-act="geometry-prev" aria-label="Önceki kart">${ICON.back}</button>
         <div class="geometry-viewer-canvas" data-zoomed="${zoom > 1 ? 'true' : 'false'}" style="--zoom:${zoom};--pan-x:${panX}px;--pan-y:${panY}px">
           <img src="${escapeAttr(data.card.src)}" alt="${escapeAttr(alt)}" draggable="false">
         </div>
-        <button class="geometry-viewer-nav next" data-act="geometry-next" aria-label="Sonraki kart">${ICON.arrow}</button>
       </div>
     </div>
   `;
