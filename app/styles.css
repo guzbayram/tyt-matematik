@@ -170,6 +170,9 @@ body {
   position: relative;
   overflow-x: hidden;
 }
+body.geometry-viewer-open {
+  overflow: hidden;
+}
 
 /* Hafif neon halo arka planı */
 body::before {
@@ -858,6 +861,16 @@ a  { color: inherit; text-decoration: none; }
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-card);
   overflow: hidden;
+  cursor: zoom-in;
+  transition: transform var(--anim-fast), border-color var(--anim-fast), box-shadow var(--anim-fast);
+}
+.geometry-card:hover,
+.geometry-card:focus-visible {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-card-hi);
+}
+.geometry-card:active {
+  transform: scale(0.992);
 }
 .geometry-card-number {
   position: absolute;
@@ -882,6 +895,111 @@ a  { color: inherit; text-decoration: none; }
   height: auto;
   border-radius: var(--radius-sm);
   background: #fff;
+}
+
+.geometry-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: #080713;
+  color: #fff;
+}
+.geometry-viewer-top {
+  min-height: calc(58px + env(safe-area-inset-top, 0px));
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(8, 7, 19, 0.88);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.geometry-viewer-title {
+  min-width: 0;
+  flex: 1;
+  text-align: center;
+}
+.geometry-viewer-title .topic {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+}
+.geometry-viewer-title .count {
+  margin-top: 2px;
+  color: rgba(255,255,255,0.62);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.geometry-viewer-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px max(12px, env(safe-area-inset-left)) calc(18px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-right));
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+}
+.geometry-viewer-stage img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 18px 70px rgba(0,0,0,0.45);
+  image-rendering: auto;
+  -webkit-user-drag: none;
+}
+.geometry-viewer-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 44px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border-radius: 14px;
+  background: rgba(8, 7, 19, 0.64);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.14);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.geometry-viewer-nav.prev { left: 12px; }
+.geometry-viewer-nav.next { right: 12px; }
+.geometry-viewer-nav svg {
+  width: 24px;
+  height: 24px;
+}
+
+@media (max-width: 520px) {
+  .geometry-viewer-stage {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .geometry-viewer-stage img {
+    max-width: 100vw;
+    border-radius: 0;
+  }
+  .geometry-viewer-nav {
+    width: 38px;
+    height: 50px;
+    opacity: 0.86;
+  }
+  .geometry-viewer-nav.prev { left: 6px; }
+  .geometry-viewer-nav.next { right: 6px; }
 }
 
 /* Floating CTA at bottom of theory tab */

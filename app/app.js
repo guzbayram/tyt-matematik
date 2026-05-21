@@ -45,6 +45,7 @@ let state = {
   unitId: null,
   topicId: null,
   topicTab: 'theory', // theory | example | quiz-intro
+  geometryViewer: null, // { topicId, cardIndex }
   quiz: null,         // { topicId, index, answers, correct, finished, selected }
   progress: loadProgress(),
   toast: null
@@ -233,6 +234,86 @@ function openTopic(id) {
 
 function openUnit(id) { go('unit', { unitId: id }); }
 
+function geometryTopics() {
+  return TOPICS.filter(t => t.unit === 4 && t.cards && t.cards.length);
+}
+
+function geometryViewerData() {
+  if (!state.geometryViewer) return null;
+  const topic = findTopic(state.geometryViewer.topicId);
+  if (!topic || !topic.cards || !topic.cards.length) return null;
+
+  const cardIndex = Math.min(Math.max(state.geometryViewer.cardIndex, 0), topic.cards.length - 1);
+  const card = topic.cards[cardIndex];
+  const topicList = geometryTopics();
+  const topicIndex = topicList.findIndex(t => t.id === topic.id);
+
+  return { topic, card, cardIndex, topicList, topicIndex };
+}
+
+function openGeometryViewer(topicId, cardIndex = 0) {
+  const topic = findTopic(topicId);
+  if (!topic || !topic.cards || !topic.cards.length) return;
+  state.geometryViewer = {
+    topicId,
+    cardIndex: Math.min(Math.max(cardIndex, 0), topic.cards.length - 1)
+  };
+  render();
+}
+
+function closeGeometryViewer() {
+  state.geometryViewer = null;
+  render();
+}
+
+function moveGeometryViewer(delta) {
+  const data = geometryViewerData();
+  if (!data) return closeGeometryViewer();
+
+  let nextTopic = data.topic;
+  let nextIndex = data.cardIndex + delta;
+
+  if (nextIndex >= data.topic.cards.length) {
+    nextTopic = data.topicList[data.topicIndex + 1];
+    nextIndex = 0;
+  } else if (nextIndex < 0) {
+    nextTopic = data.topicList[data.topicIndex - 1];
+    nextIndex = nextTopic ? nextTopic.cards.length - 1 : 0;
+  }
+
+  if (!nextTopic) return;
+
+  state.topicId = nextTopic.id;
+  state.geometryViewer = { topicId: nextTopic.id, cardIndex: nextIndex };
+  render();
+}
+
+function renderGeometryViewer() {
+  const data = geometryViewerData();
+  if (!data) return '';
+
+  const totalTopics = data.topicList.length;
+  const alt = data.card.alt || data.topic.title;
+
+  return `
+    <div class="geometry-viewer" role="dialog" aria-modal="true" aria-label="${escapeAttr(data.topic.title)}">
+      <div class="geometry-viewer-top">
+        <button class="icon-btn" data-act="geometry-close" aria-label="Kapat">${ICON.close}</button>
+        <div class="geometry-viewer-title">
+          <div class="topic">${escapeHtml(data.topic.title)}</div>
+          <div class="count">Konu ${data.topicIndex + 1}/${totalTopics} · Kart ${data.cardIndex + 1}/${data.topic.cards.length}</div>
+        </div>
+        <div style="width:40px"></div>
+      </div>
+      <div class="geometry-viewer-stage" data-geometry-swipe>
+        <button class="geometry-viewer-nav prev" data-act="geometry-prev" aria-label="Önceki kart">${ICON.back}</button>
+        <img src="${escapeAttr(data.card.src)}" alt="${escapeAttr(alt)}" draggable="false">
+        <button class="geometry-viewer-nav next" data-act="geometry-next" aria-label="Sonraki kart">${ICON.arrow}</button>
+      </div>
+    </div>
+  `;
+}
+
 function startQuiz(topicId) {
   state.quiz = {
     topicId,
@@ -415,8 +496,8 @@ function renderTopic() {
           </div>
         </div>
         <div class="geometry-card-list">
-          ${t.cards.map(card => `
-            <article class="geometry-card">
+          ${t.cards.map((card, i) => `
+            <article class="geometry-card" data-geometry-card data-card-index="${i}" tabindex="0" aria-label="${escapeAttr((card.alt || t.title) + ' kartını tam ekranda aç')}">
               <div class="geometry-card-number">${card.no}</div>
               <img src="${escapeAttr(card.src)}" alt="${escapeAttr(card.alt || t.title)}" loading="lazy">
             </article>
@@ -932,7 +1013,8 @@ function render() {
   }
 
   const showTab = state.screen !== 'quiz';
-  app.innerHTML = `<div class="screen">${inner}</div>${showTab ? renderTabBar() : ''}`;
+  app.innerHTML = `<div class="screen">${inner}</div>${showTab ? renderTabBar() : ''}${renderGeometryViewer()}`;
+  document.body.classList.toggle('geometry-viewer-open', Boolean(state.geometryViewer));
 
   // render KaTeX
   renderKatex(app);
@@ -1021,6 +1103,15 @@ document.addEventListener('click', e => {
       break;
     case 'retry-quiz': startQuiz(state.quiz.topicId); break;
     case 'finish-quiz': go('topic', { topicId: state.quiz.topicId }); state.quiz = null; break;
+    case 'geometry-close':
+      closeGeometryViewer();
+      break;
+    case 'geometry-next':
+      moveGeometryViewer(1);
+      break;
+    case 'geometry-prev':
+      moveGeometryViewer(-1);
+      break;
     case 'close-quiz':
       if (confirm('Quiz\'i kapatmak istediğinden emin misin? İlerleme kaybolur.')) {
         go('topic', { topicId: state.quiz.topicId });
@@ -1038,6 +1129,60 @@ document.addEventListener('click', e => {
       }
       break;
   }
+});
+
+let geometryLastTap = { element: null, time: 0 };
+
+document.addEventListener('dblclick', e => {
+  const card = e.target.closest('[data-geometry-card]');
+  if (!card || state.screen !== 'topic') return;
+  openGeometryViewer(state.topicId, parseInt(card.dataset.cardIndex, 10) || 0);
+});
+
+document.addEventListener('click', e => {
+  const card = e.target.closest('[data-geometry-card]');
+  if (!card || state.screen !== 'topic') return;
+
+  const now = Date.now();
+  if (geometryLastTap.element === card && now - geometryLastTap.time < 320) {
+    openGeometryViewer(state.topicId, parseInt(card.dataset.cardIndex, 10) || 0);
+    geometryLastTap = { element: null, time: 0 };
+    return;
+  }
+
+  geometryLastTap = { element: card, time: now };
+});
+
+document.addEventListener('keydown', e => {
+  if (state.geometryViewer) {
+    if (e.key === 'Escape') closeGeometryViewer();
+    else if (e.key === 'ArrowRight') moveGeometryViewer(1);
+    else if (e.key === 'ArrowLeft') moveGeometryViewer(-1);
+    return;
+  }
+
+  if (e.key === 'Enter') {
+    const card = document.activeElement && document.activeElement.closest('[data-geometry-card]');
+    if (card && state.screen === 'topic') openGeometryViewer(state.topicId, parseInt(card.dataset.cardIndex, 10) || 0);
+  }
+});
+
+let geometrySwipe = null;
+
+document.addEventListener('pointerdown', e => {
+  if (!state.geometryViewer || !e.target.closest('[data-geometry-swipe]')) return;
+  geometrySwipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
+});
+
+document.addEventListener('pointerup', e => {
+  if (!geometrySwipe || e.pointerId !== geometrySwipe.id) return;
+
+  const dx = e.clientX - geometrySwipe.x;
+  const dy = e.clientY - geometrySwipe.y;
+  geometrySwipe = null;
+
+  if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+  moveGeometryViewer(dx < 0 ? 1 : -1);
 });
 
 // ─────────────────────────────────────────────────────────────
