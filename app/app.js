@@ -256,13 +256,18 @@ function openGeometryViewer(topicId, cardIndex = 0) {
   if (!topic || !topic.cards || !topic.cards.length) return;
   state.geometryViewer = {
     topicId,
-    cardIndex: Math.min(Math.max(cardIndex, 0), topic.cards.length - 1)
+    cardIndex: Math.min(Math.max(cardIndex, 0), topic.cards.length - 1),
+    zoom: 1,
+    panX: 0,
+    panY: 0
   };
   render();
+  requestGeometryLandscape();
 }
 
 function closeGeometryViewer() {
   state.geometryViewer = null;
+  releaseGeometryLandscape();
   render();
 }
 
@@ -284,8 +289,54 @@ function moveGeometryViewer(delta) {
   if (!nextTopic) return;
 
   state.topicId = nextTopic.id;
-  state.geometryViewer = { topicId: nextTopic.id, cardIndex: nextIndex };
+  state.geometryViewer = { topicId: nextTopic.id, cardIndex: nextIndex, zoom: 1, panX: 0, panY: 0 };
   render();
+}
+
+function requestGeometryLandscape() {
+  const viewer = document.querySelector('.geometry-viewer');
+  if (!viewer) return;
+
+  try {
+    if (viewer.requestFullscreen && !document.fullscreenElement) {
+      viewer.requestFullscreen().catch(() => {});
+    }
+  } catch (e) {}
+
+  try {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(() => {});
+    }
+  } catch (e) {}
+}
+
+function releaseGeometryLandscape() {
+  try {
+    if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+  } catch (e) {}
+
+  try {
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+  } catch (e) {}
+}
+
+function setGeometryZoom(zoom, panX = state.geometryViewer.panX, panY = state.geometryViewer.panY) {
+  if (!state.geometryViewer) return;
+  const nextZoom = Math.min(Math.max(zoom, 1), 4);
+  state.geometryViewer.zoom = nextZoom;
+  state.geometryViewer.panX = nextZoom === 1 ? 0 : panX;
+  state.geometryViewer.panY = nextZoom === 1 ? 0 : panY;
+  updateGeometryTransform();
+}
+
+function updateGeometryTransform() {
+  if (!state.geometryViewer) return;
+  const canvas = document.querySelector('.geometry-viewer-canvas');
+  if (!canvas) return;
+  canvas.style.setProperty('--zoom', state.geometryViewer.zoom);
+  canvas.style.setProperty('--pan-x', `${state.geometryViewer.panX}px`);
+  canvas.style.setProperty('--pan-y', `${state.geometryViewer.panY}px`);
+  canvas.dataset.zoomed = state.geometryViewer.zoom > 1 ? 'true' : 'false';
 }
 
 function renderGeometryViewer() {
@@ -294,6 +345,9 @@ function renderGeometryViewer() {
 
   const totalTopics = data.topicList.length;
   const alt = data.card.alt || data.topic.title;
+  const zoom = state.geometryViewer.zoom || 1;
+  const panX = state.geometryViewer.panX || 0;
+  const panY = state.geometryViewer.panY || 0;
 
   return `
     <div class="geometry-viewer" role="dialog" aria-modal="true" aria-label="${escapeAttr(data.topic.title)}">
@@ -307,7 +361,9 @@ function renderGeometryViewer() {
       </div>
       <div class="geometry-viewer-stage" data-geometry-swipe>
         <button class="geometry-viewer-nav prev" data-act="geometry-prev" aria-label="Önceki kart">${ICON.back}</button>
-        <img src="${escapeAttr(data.card.src)}" alt="${escapeAttr(alt)}" draggable="false">
+        <div class="geometry-viewer-canvas" data-zoomed="${zoom > 1 ? 'true' : 'false'}" style="--zoom:${zoom};--pan-x:${panX}px;--pan-y:${panY}px">
+          <img src="${escapeAttr(data.card.src)}" alt="${escapeAttr(alt)}" draggable="false">
+        </div>
         <button class="geometry-viewer-nav next" data-act="geometry-next" aria-label="Sonraki kart">${ICON.arrow}</button>
       </div>
     </div>
@@ -1168,22 +1224,87 @@ document.addEventListener('keydown', e => {
 });
 
 let geometrySwipe = null;
+let geometryPointers = new Map();
+let geometryGesture = null;
 
 document.addEventListener('pointerdown', e => {
-  if (!state.geometryViewer || !e.target.closest('[data-geometry-swipe]')) return;
-  geometrySwipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
+  if (!state.geometryViewer || !e.target.closest('[data-geometry-swipe]') || e.target.closest('button')) return;
+  const stage = e.target.closest('[data-geometry-swipe]');
+  stage.setPointerCapture && stage.setPointerCapture(e.pointerId);
+
+  geometryPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (geometryPointers.size === 1) {
+    geometrySwipe = { x: e.clientX, y: e.clientY, id: e.pointerId, panX: state.geometryViewer.panX, panY: state.geometryViewer.panY };
+  } else if (geometryPointers.size === 2) {
+    const points = [...geometryPointers.values()];
+    geometryGesture = {
+      distance: Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y),
+      zoom: state.geometryViewer.zoom,
+      panX: state.geometryViewer.panX,
+      panY: state.geometryViewer.panY,
+      centerX: (points[0].x + points[1].x) / 2,
+      centerY: (points[0].y + points[1].y) / 2
+    };
+  }
+});
+
+document.addEventListener('pointermove', e => {
+  if (!state.geometryViewer || !geometryPointers.has(e.pointerId)) return;
+  geometryPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (geometryPointers.size >= 2 && geometryGesture) {
+    e.preventDefault();
+    const points = [...geometryPointers.values()];
+    const distance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+    const centerX = (points[0].x + points[1].x) / 2;
+    const centerY = (points[0].y + points[1].y) / 2;
+    const nextZoom = geometryGesture.zoom * (distance / geometryGesture.distance);
+    setGeometryZoom(
+      nextZoom,
+      geometryGesture.panX + centerX - geometryGesture.centerX,
+      geometryGesture.panY + centerY - geometryGesture.centerY
+    );
+    return;
+  }
+
+  if (!geometrySwipe || geometrySwipe.id !== e.pointerId || state.geometryViewer.zoom <= 1) return;
+  e.preventDefault();
+  setGeometryZoom(
+    state.geometryViewer.zoom,
+    geometrySwipe.panX + e.clientX - geometrySwipe.x,
+    geometrySwipe.panY + e.clientY - geometrySwipe.y
+  );
 });
 
 document.addEventListener('pointerup', e => {
+  if (!state.geometryViewer || !geometryPointers.has(e.pointerId)) return;
+  geometryPointers.delete(e.pointerId);
+
+  if (geometryPointers.size < 2) geometryGesture = null;
   if (!geometrySwipe || e.pointerId !== geometrySwipe.id) return;
 
   const dx = e.clientX - geometrySwipe.x;
   const dy = e.clientY - geometrySwipe.y;
   geometrySwipe = null;
 
+  if (state.geometryViewer.zoom > 1) return;
   if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
   moveGeometryViewer(dx < 0 ? 1 : -1);
 });
+
+document.addEventListener('pointercancel', e => {
+  geometryPointers.delete(e.pointerId);
+  if (geometryPointers.size < 2) geometryGesture = null;
+  if (geometrySwipe && geometrySwipe.id === e.pointerId) geometrySwipe = null;
+});
+
+document.addEventListener('wheel', e => {
+  if (!state.geometryViewer || !e.target.closest('[data-geometry-swipe]')) return;
+  e.preventDefault();
+  const delta = e.deltaY < 0 ? 0.18 : -0.18;
+  setGeometryZoom(state.geometryViewer.zoom + delta);
+}, { passive: false });
 
 // ─────────────────────────────────────────────────────────────
 // INIT
