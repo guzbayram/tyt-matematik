@@ -949,17 +949,26 @@ a  { color: inherit; text-decoration: none; }
   pointer-events: none;
   color: #111018;
 }
-.geometry-viewer-line {
-  display: -webkit-box;
+.geometry-viewer-topic,
+.geometry-viewer-meta {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: normal;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  white-space: nowrap;
   min-width: 0;
+}
+.geometry-viewer-topic {
   font-size: 1.22rem;
   font-weight: var(--weight-bold);
-  line-height: 1.18;
+  line-height: 1.12;
+}
+.geometry-viewer-meta {
+  margin-top: 3px;
+  color: #545079;
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  font-weight: var(--weight-medium);
+  line-height: 1.12;
 }
 .geometry-viewer-stage {
   position: fixed;
@@ -1015,8 +1024,11 @@ a  { color: inherit; text-decoration: none; }
     width: calc(100dvh - 158px);
     padding: 6px 9px;
   }
-  .geometry-viewer-line {
+  .geometry-viewer-topic {
     font-size: 1.02rem;
+  }
+  .geometry-viewer-meta {
+    font-size: 0.78rem;
   }
 }
 
