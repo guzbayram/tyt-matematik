@@ -354,11 +354,8 @@ function renderGeometryViewer() {
       <div class="geometry-viewer-top">
         <button class="icon-btn" data-act="geometry-close" aria-label="Kapat">${ICON.close}</button>
         <div class="geometry-viewer-title">
-          <span class="topic">${escapeHtml(data.topic.title)}</span>
-          <span class="count">Konu ${data.topicIndex + 1}/${totalTopics}</span>
-          <span class="count">Kart ${data.cardIndex + 1}/${data.topic.cards.length}</span>
+          <span class="geometry-viewer-line">${escapeHtml(data.topic.title)} · Konu ${data.topicIndex + 1}/${totalTopics} · Kart ${data.cardIndex + 1}/${data.topic.cards.length}</span>
         </div>
-        <div style="width:40px"></div>
       </div>
       <div class="geometry-viewer-stage" data-geometry-swipe>
         <button class="geometry-viewer-nav prev" data-act="geometry-prev" aria-label="Önceki kart">${ICON.back}</button>

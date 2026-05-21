@@ -898,6 +898,7 @@ a  { color: inherit; text-decoration: none; }
 }
 
 .geometry-viewer {
+  --viewer-rail: 58px;
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -907,37 +908,42 @@ a  { color: inherit; text-decoration: none; }
 }
 .geometry-viewer-top {
   position: absolute;
-  inset: 0 0 auto 0;
+  inset: 0 auto 0 0;
   z-index: 4;
-  min-height: calc(56px + env(safe-area-inset-top, 0px));
-  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 8px;
+  width: calc(var(--viewer-rail) + env(safe-area-inset-left, 0px));
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 8px calc(10px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  justify-content: flex-start;
   pointer-events: none;
-}
-.geometry-viewer-top .icon-btn { pointer-events: auto; }
-.geometry-viewer-title {
-  width: min(72vw, 760px);
-  min-width: 0;
-  flex: 0 1 auto;
-  margin: 0 auto;
-  padding: 8px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  text-align: center;
-  pointer-events: none;
-  color: #fff;
-  background: rgba(8, 7, 19, 0.78);
-  border: 1px solid rgba(255,255,255,0.16);
-  border-radius: 999px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+  background: rgba(8, 7, 19, 0.86);
+  border-right: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 10px 0 28px rgba(0,0,0,0.12);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
-.geometry-viewer-title .topic {
+.geometry-viewer-top .icon-btn { pointer-events: auto; }
+.geometry-viewer-title {
+  position: absolute;
+  top: 50%;
+  left: calc(50% + env(safe-area-inset-left, 0px) / 2);
+  width: calc(100dvh - 136px);
+  min-width: 0;
+  max-width: 760px;
+  padding: 7px 12px;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center center;
+  text-align: center;
+  pointer-events: none;
+  color: #fff;
+  background: rgba(8, 7, 19, 0.82);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 999px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.24);
+}
+.geometry-viewer-line {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -946,22 +952,11 @@ a  { color: inherit; text-decoration: none; }
   font-weight: var(--weight-bold);
   line-height: 1.15;
 }
-.geometry-viewer-title .count {
-  flex: 0 0 auto;
-  color: rgba(255,255,255,0.86);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  line-height: 1.15;
-  white-space: nowrap;
-}
-.geometry-viewer-title .count::before {
-  content: '·';
-  margin-right: 10px;
-  color: rgba(255,255,255,0.42);
-}
 .geometry-viewer-stage {
-  position: relative;
-  width: 100vw;
+  position: absolute;
+  top: 0;
+  left: calc(var(--viewer-rail) + env(safe-area-inset-left, 0px));
+  width: calc(100vw - var(--viewer-rail) - env(safe-area-inset-left, 0px));
   height: 100dvh;
   display: flex;
   align-items: center;
@@ -990,7 +985,7 @@ a  { color: inherit; text-decoration: none; }
 }
 .geometry-viewer-canvas img {
   display: block;
-  width: 100vw;
+  width: calc(100vw - var(--viewer-rail) - env(safe-area-inset-left, 0px));
   height: 100dvh;
   object-fit: contain;
   border-radius: 0;
@@ -1024,19 +1019,15 @@ a  { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 520px) {
+  .geometry-viewer {
+    --viewer-rail: 50px;
+  }
   .geometry-viewer-title {
-    width: min(68vw, 560px);
-    padding: 7px 10px;
-    gap: 7px;
+    width: calc(100dvh - 118px);
+    padding: 6px 9px;
   }
-  .geometry-viewer-title .topic {
+  .geometry-viewer-line {
     font-size: 11px;
-  }
-  .geometry-viewer-title .count {
-    font-size: 9.5px;
-  }
-  .geometry-viewer-title .count::before {
-    margin-right: 7px;
   }
   .geometry-viewer-nav {
     width: 38px;
@@ -1049,21 +1040,16 @@ a  { color: inherit; text-decoration: none; }
 
 @media (orientation: portrait) {
   .geometry-viewer-stage {
-    position: absolute;
     top: 50%;
-    left: 50%;
+    left: calc(var(--viewer-rail) + env(safe-area-inset-left, 0px) + (100vw - var(--viewer-rail) - env(safe-area-inset-left, 0px)) / 2);
     width: 100dvh;
-    height: 100vw;
+    height: calc(100vw - var(--viewer-rail) - env(safe-area-inset-left, 0px));
     transform: translate(-50%, -50%) rotate(90deg);
     transform-origin: center center;
   }
   .geometry-viewer-canvas img {
     width: 100dvh;
-    height: 100vw;
-  }
-  .geometry-viewer-top {
-    min-height: calc(54px + env(safe-area-inset-top, 0px));
-    background: transparent;
+    height: calc(100vw - var(--viewer-rail) - env(safe-area-inset-left, 0px));
   }
 }
 
