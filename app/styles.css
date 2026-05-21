@@ -922,13 +922,18 @@ a  { color: inherit; text-decoration: none; }
   align-items: center;
   justify-content: flex-start;
   pointer-events: none;
-  background: rgba(8, 7, 19, 0.86);
-  border-right: 1px solid rgba(255,255,255,0.12);
-  box-shadow: 10px 0 28px rgba(0,0,0,0.12);
+  color: #14122B;
+  background: rgba(255,255,255,0.94);
+  border-right: 1px solid rgba(20,18,43,0.1);
+  box-shadow: 10px 0 28px rgba(20,18,43,0.08);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
-.geometry-viewer-top .icon-btn { pointer-events: auto; }
+.geometry-viewer-top .icon-btn {
+  pointer-events: auto;
+  color: #3B385F;
+  background: rgba(20,18,43,0.06);
+}
 .geometry-viewer-title {
   position: fixed;
   top: 50%;
@@ -942,21 +947,19 @@ a  { color: inherit; text-decoration: none; }
   transform-origin: center center;
   text-align: center;
   pointer-events: none;
-  color: #fff;
-  background: rgba(8, 7, 19, 0.82);
-  border: 1px solid rgba(255,255,255,0.16);
-  border-radius: 999px;
-  box-shadow: 0 10px 28px rgba(0,0,0,0.24);
+  color: #111018;
 }
 .geometry-viewer-line {
-  display: block;
+  display: -webkit-box;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   min-width: 0;
   font-size: var(--text-sm);
   font-weight: var(--weight-bold);
-  line-height: 1.15;
+  line-height: 1.18;
 }
 .geometry-viewer-stage {
   position: fixed;
@@ -1029,6 +1032,9 @@ a  { color: inherit; text-decoration: none; }
   height: 48px;
   transform: none;
   z-index: 5;
+  color: #14122B;
+  background: rgba(20,18,43,0.06);
+  border-color: rgba(20,18,43,0.12);
 }
 .geometry-viewer-nav.next { right: 12px; }
 .geometry-viewer-nav svg {
