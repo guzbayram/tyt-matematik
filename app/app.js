@@ -1222,6 +1222,7 @@ document.addEventListener('keydown', e => {
 let geometrySwipe = null;
 let geometryPointers = new Map();
 let geometryGesture = null;
+let geometrySuppressTap = false;
 
 document.addEventListener('pointerdown', e => {
   if (!state.geometryViewer || !e.target.closest('[data-geometry-swipe]') || e.target.closest('button')) return;
@@ -1286,7 +1287,9 @@ document.addEventListener('pointerup', e => {
 
   if (state.geometryViewer.zoom > 1) return;
   if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+  geometrySuppressTap = true;
   moveGeometryViewer(dx < 0 ? 1 : -1);
+  setTimeout(() => { geometrySuppressTap = false; }, 0);
 });
 
 document.addEventListener('pointercancel', e => {
@@ -1301,6 +1304,16 @@ document.addEventListener('wheel', e => {
   const delta = e.deltaY < 0 ? 0.18 : -0.18;
   setGeometryZoom(state.geometryViewer.zoom + delta);
 }, { passive: false });
+
+document.addEventListener('click', e => {
+  if (!state.geometryViewer || geometrySuppressTap || state.geometryViewer.zoom > 1) return;
+  const stage = e.target.closest('[data-geometry-swipe]');
+  if (!stage || e.target.closest('button')) return;
+
+  const rect = stage.getBoundingClientRect();
+  const isRightSide = e.clientX >= rect.left + rect.width / 2;
+  moveGeometryViewer(isRightSide ? 1 : -1);
+});
 
 // ─────────────────────────────────────────────────────────────
 // INIT
