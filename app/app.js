@@ -359,6 +359,7 @@ function renderGeometryViewer() {
         </div>
       </div>
       <div class="geometry-viewer-stage" data-geometry-swipe>
+        <div class="geometry-viewer-card-number">${data.card.no}</div>
         <div class="geometry-viewer-canvas" data-zoomed="${zoom > 1 ? 'true' : 'false'}" style="--zoom:${zoom};--pan-x:${panX}px;--pan-y:${panY}px">
           <img src="${escapeAttr(data.card.src)}" alt="${escapeAttr(alt)}" draggable="false">
         </div>
