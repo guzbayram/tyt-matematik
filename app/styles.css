@@ -1031,10 +1031,10 @@ a  { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #14122B;
-  background: rgba(255,255,255,0.94);
-  border: 1px solid rgba(20,18,43,0.14);
-  box-shadow: 0 8px 22px rgba(20,18,43,0.14);
+  color: var(--text-primary);
+  background: color-mix(in oklab, var(--accent) 18%, var(--bg-elevated));
+  border: 1px solid var(--border-mid);
+  box-shadow: 0 8px 22px rgba(20,18,43,0.16);
   font-family: var(--font-mono);
   font-size: 0.86rem;
   font-weight: var(--weight-bold);
