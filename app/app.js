@@ -339,6 +339,60 @@ function updateGeometryTransform() {
   canvas.dataset.zoomed = state.geometryViewer.zoom > 1 ? 'true' : 'false';
 }
 
+function centerGeometryViewerImage(root = document) {
+  const img = root.querySelector('.geometry-viewer-canvas img');
+  const canvas = root.querySelector('.geometry-viewer-canvas');
+  if (!img || !canvas) return;
+
+  const applyCentering = () => {
+    if (!img.naturalWidth || !img.naturalHeight) return;
+
+    const scan = document.createElement('canvas');
+    const ctx = scan.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    const maxScan = 420;
+    const scale = Math.min(1, maxScan / Math.max(img.naturalWidth, img.naturalHeight));
+    scan.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    scan.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    ctx.drawImage(img, 0, 0, scan.width, scan.height);
+
+    const data = ctx.getImageData(0, 0, scan.width, scan.height).data;
+    let minX = scan.width, minY = scan.height, maxX = -1, maxY = -1;
+
+    for (let y = 0; y < scan.height; y++) {
+      for (let x = 0; x < scan.width; x++) {
+        const i = (y * scan.width + x) * 4;
+        const alpha = data[i + 3];
+        const darkness = 255 - Math.min(data[i], data[i + 1], data[i + 2]);
+        if (alpha > 20 && darkness > 22) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (maxX < 0 || maxY < 0) return;
+
+    const box = canvas.getBoundingClientRect();
+    const fit = Math.min(box.width / img.naturalWidth, box.height / img.naturalHeight);
+    const renderedW = img.naturalWidth * fit;
+    const renderedH = img.naturalHeight * fit;
+    const renderedLeft = (box.width - renderedW) / 2;
+    const renderedTop = (box.height - renderedH) / 2;
+    const contentCenterX = renderedLeft + ((minX + maxX + 1) / 2 / scale) * fit;
+    const contentCenterY = renderedTop + ((minY + maxY + 1) / 2 / scale) * fit;
+
+    canvas.style.setProperty('--content-x', `${(box.width / 2) - contentCenterX}px`);
+    canvas.style.setProperty('--content-y', `${(box.height / 2) - contentCenterY}px`);
+  };
+
+  if (img.complete) applyCentering();
+  else img.addEventListener('load', applyCentering, { once: true });
+}
+
 function renderGeometryViewer() {
   const data = geometryViewerData();
   if (!data) return '';
@@ -1072,6 +1126,7 @@ function render() {
 
   // render KaTeX
   renderKatex(app);
+  centerGeometryViewerImage(app);
 }
 
 // ─────────────────────────────────────────────────────────────

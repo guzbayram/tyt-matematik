@@ -987,6 +987,8 @@ a  { color: inherit; text-decoration: none; }
   user-select: none;
 }
 .geometry-viewer-canvas {
+  --content-x: 0px;
+  --content-y: 0px;
   width: 100%;
   height: 100%;
   display: flex;
@@ -996,6 +998,7 @@ a  { color: inherit; text-decoration: none; }
   transform-origin: center center;
   will-change: transform;
   cursor: zoom-in;
+  background: #fff;
 }
 .geometry-viewer-canvas[data-zoomed="true"] {
   cursor: grab;
@@ -1010,10 +1013,12 @@ a  { color: inherit; text-decoration: none; }
   height: 100dvh;
   object-fit: contain;
   border-radius: 0;
-  background: #fff;
+  background: transparent;
   box-shadow: none;
   image-rendering: auto;
   -webkit-user-drag: none;
+  transform: translate3d(var(--content-x), var(--content-y), 0);
+  will-change: transform;
 }
 .geometry-viewer-card-number {
   position: absolute;
