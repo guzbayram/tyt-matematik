@@ -339,10 +339,8 @@ function updateGeometryTransform() {
   canvas.dataset.zoomed = state.geometryViewer.zoom > 1 ? 'true' : 'false';
 }
 
-function centerGeometryViewerImage(root = document) {
-  const img = root.querySelector('.geometry-viewer-canvas img');
-  const canvas = root.querySelector('.geometry-viewer-canvas');
-  if (!img || !canvas) return;
+function centerGeometryImageContent(img, styleTarget, measureTarget = styleTarget) {
+  if (!img || !styleTarget || !measureTarget) return;
 
   const applyCentering = () => {
     if (!img.naturalWidth || !img.naturalHeight) return;
@@ -376,7 +374,7 @@ function centerGeometryViewerImage(root = document) {
 
     if (maxX < 0 || maxY < 0) return;
 
-    const box = canvas.getBoundingClientRect();
+    const box = measureTarget.getBoundingClientRect();
     const fit = Math.min(box.width / img.naturalWidth, box.height / img.naturalHeight);
     const renderedW = img.naturalWidth * fit;
     const renderedH = img.naturalHeight * fit;
@@ -385,12 +383,24 @@ function centerGeometryViewerImage(root = document) {
     const contentCenterX = renderedLeft + ((minX + maxX + 1) / 2 / scale) * fit;
     const contentCenterY = renderedTop + ((minY + maxY + 1) / 2 / scale) * fit;
 
-    canvas.style.setProperty('--content-x', `${(box.width / 2) - contentCenterX}px`);
-    canvas.style.setProperty('--content-y', `${(box.height / 2) - contentCenterY}px`);
+    styleTarget.style.setProperty('--content-x', `${(box.width / 2) - contentCenterX}px`);
+    styleTarget.style.setProperty('--content-y', `${(box.height / 2) - contentCenterY}px`);
   };
 
   if (img.complete) applyCentering();
   else img.addEventListener('load', applyCentering, { once: true });
+}
+
+function centerGeometryImages(root = document) {
+  root.querySelectorAll('.geometry-card').forEach(card => {
+    const img = card.querySelector('img');
+    centerGeometryImageContent(img, card, img);
+  });
+
+  const viewerCanvas = root.querySelector('.geometry-viewer-canvas');
+  if (viewerCanvas) {
+    centerGeometryImageContent(viewerCanvas.querySelector('img'), viewerCanvas);
+  }
 }
 
 function renderGeometryViewer() {
@@ -1126,7 +1136,7 @@ function render() {
 
   // render KaTeX
   renderKatex(app);
-  centerGeometryViewerImage(app);
+  centerGeometryImages(app);
 }
 
 // ─────────────────────────────────────────────────────────────
