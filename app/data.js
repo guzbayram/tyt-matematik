@@ -35,7 +35,51 @@ function F(id, unit, title, difficulty, mins, data) {
 
 window.TOPICS = [
   // ───────── ÜNİTE 1: SAYILAR ─────────
-  S(1, 1, 'Sayı Kümeleri', 1, 6, 'Doğal (N), Tam (Z), Rasyonel (Q), Gerçek (R) sayılar arasındaki kapsama ilişkisi: N ⊂ Z ⊂ Q ⊂ R.'),
+  F(1, 1, 'Sayı Kümeleri', 1, 6, {
+    summary: 'Rakamlar, doğal sayılar, tam sayılar, rasyonel sayılar, irrasyonel sayılar ve gerçek sayılar arasındaki ilişki.',
+    theory: {
+      rules: [
+        { title: 'Rakamlar',
+          formula: '\\{0,1,2,3,4,5,6,7,8,9\\}',
+          tip: 'Sayıları yazmak için kullanılan sembollere rakam denir. Rakamlar kümesi {0, 1, 2, 3, 4, 5, 6, 7, 8, 9} dir.' },
+        { title: 'Doğal ve Tam Sayılar',
+          formula: '\\mathbb{N}=\\{0,1,2,3,\\ldots\\},\\quad \\mathbb{Z}=\\{\\ldots,-3,-2,-1,0,1,2,3,\\ldots\\}',
+          tip: '0, 1, 2, 3, ... şeklindeki sayıların oluşturduğu kümeye doğal sayılar kümesi denir ve N ile gösterilir. N doğal sayılar kümesine -1, -2, -3, ... sayılarının eklenmesiyle oluşan sayı kümesine tam sayılar kümesi denir ve Z ile gösterilir.' },
+        { title: 'Rasyonel ve İrrasyonel Sayılar',
+          formula: 'a,b\\in\\mathbb{Z},\\; b\\neq 0 \\Rightarrow \\dfrac{a}{b}\\in\\mathbb{Q}',
+          tip: 'a ve b tam sayılar, b sıfırdan farklı olmak üzere a/b şeklinde yazılabilen sayılara rasyonel sayılar denir. Bu şekilde yazılamayan sayılara irrasyonel sayılar denir ve irrasyonel sayılar kümesi Q′ simgesi ile gösterilir.' },
+        { title: 'Gerçek Sayılar',
+          formula: '\\mathbb{N}\\subset\\mathbb{Z}\\subset\\mathbb{Q}\\subset\\mathbb{R},\\quad \\mathbb{Q}\\cup\\mathbb{Q}^{\\prime}=\\mathbb{R}',
+          tip: 'Rasyonel sayılar kümesi ile irrasyonel sayılar kümesinin birleşiminden oluşan kümeye gerçek (reel) sayılar kümesi denir ve R simgesi ile gösterilir.' }
+      ],
+      facts: [
+        { text: 'İrrasyonel sayılara √2, √(3/5), π, ... sayıları örnek olarak verilebilir.' },
+        { text: 'İrrasyonel sayılar; kök dışına tam olarak çıkamayan sayılardır.' },
+        { text: 'İrrasyonel sayılar; virgülden sonraki kısmı tam olarak bilinmeyen sayılardır.' },
+        { text: 'İrrasyonel sayılar; iki tam sayının oranı şeklinde yazılamayan sayılardır.' },
+        { text: 'Gerçek sayılar kümesinin her elemanına sayı doğrusunda bir nokta karşılık gelir.' },
+        { text: 'Sayı doğrusu gerçek sayıların bir gösterim şeklidir. Her gerçek sayı, sayı doğrusu üzerinde bir nokta belirtir.' }
+      ],
+      warning: '√-2, √-9 gibi içinde negatif sayı bulunan kareköklü sayılar gerçek sayı belirtmez.'
+    },
+    examples: [
+      { question: '√2 sayısının sayı doğrusu üzerindeki yerini gösterelim.',
+        steps: [
+          'Sayı doğrusunda 0 ile 1 noktaları arasında dik bir kenar oluşturalım.',
+          'Kenar uzunlukları 1 ve 1 olan dik üçgende hipotenüs uzunluğu Pisagor teoremine göre \\sqrt{1^2+1^2}=\\sqrt{2} olur.',
+          'Pergel/yarıçap düşüncesiyle bu \\sqrt{2} uzunluğu sayı doğrusu üzerine taşındığında 1 ile 2 arasında bir nokta elde edilir.',
+          '\\sqrt{2} rasyonel değildir; sayı doğrusunda gösterilebildiği için gerçek sayıdır.'
+        ],
+        answer: '\\sqrt{2}\\in\\mathbb{R}\\setminus\\mathbb{Q}' }
+    ],
+    quiz: [
+      { q: 'Sayıları yazmak için kullanılan sembollere ne denir?', opt: ['Rakam','Doğal sayı','Tam sayı','Gerçek sayı'], a: 0, e: 'PDF tanımına göre sayıları yazmak için kullanılan semboller rakamdır.' },
+      { q: 'Doğal sayılar kümesi hangi gösterime sahiptir?', opt: ['{..., -2, -1, 0, 1, ...}','{0, 1, 2, 3, ...}','{1, 3, 5, ...}','Q′'], a: 1, e: 'Doğal sayılar kümesi N = {0, 1, 2, 3, ...} şeklindedir.' },
+      { q: 'a ve b tam sayılar, b sıfırdan farklı iken a/b şeklinde yazılabilen sayılar hangisidir?', opt: ['İrrasyonel sayılar','Rasyonel sayılar','Sadece doğal sayılar','Sadece negatif sayılar'], a: 1, e: 'a/b biçiminde yazılabilen sayılar rasyonel sayılardır.' },
+      { q: 'Aşağıdakilerden hangisi gerçek sayı belirtmez?', opt: ['√2','π','√-9','8/3'], a: 2, e: 'İçinde negatif sayı bulunan kareköklü sayılar, örneğin √-9, gerçek sayı belirtmez.' },
+      { q: 'Sayı kümeleri arasındaki doğru kapsama ilişkisi hangisidir?', opt: ['N ⊂ Z ⊂ Q ⊂ R','R ⊂ Q ⊂ Z ⊂ N','Q′ ⊂ Q','Z ⊂ N ⊂ R'], a: 0, e: 'PDF’de verilen ilişki N ⊂ Z ⊂ Q ⊂ R ve Q ∪ Q′ = R şeklindedir.' }
+    ]
+  }),
   S(2, 1, 'Temel İşlemler', 1, 5, 'İşlem önceliği: Parantez → Üs/Kök → Çarpma/Bölme → Toplama/Çıkarma. Soldan sağa.'),
   S(3, 1, 'Tek ve Çift Sayılar', 1, 6, 'Ç+Ç=Ç, T+T=Ç, Ç+T=T. Tek sayının her kuvveti tektir; çift sayının her kuvveti çifttir.'),
   S(4, 1, 'Pozitif ve Negatif Sayılar', 1, 5, 'Aynı işaretli sayılar çarpımda/bölmede pozitif, farklı işaretli ise negatif sonuç verir.'),

@@ -663,7 +663,10 @@ function renderTopic() {
           <div class="facts">
             <h3>Bilmen Gerekenler</h3>
             <ul>
-              ${t.theory.facts.map(f => `<li><span data-tex="${escapeAttr(f)}" data-display="true"></span></li>`).join('')}
+              ${t.theory.facts.map(f => {
+                if (typeof f === 'string') return `<li><span data-tex="${escapeAttr(f)}" data-display="true"></span></li>`;
+                return `<li>${escapeHtml(f.text || '')}</li>`;
+              }).join('')}
             </ul>
           </div>
         ` : ''}
