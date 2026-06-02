@@ -682,7 +682,9 @@ function renderTopic() {
               ${ex.steps.map((s, si) => `
                 <div class="step">
                   <div class="step-n">${si + 1}</div>
-                  <div><span data-tex="${escapeAttr(s)}" data-display="false"></span></div>
+                  <div>${typeof s === 'string'
+                    ? `<span data-tex="${escapeAttr(s)}" data-display="false"></span>`
+                    : escapeHtml(s.text || '')}</div>
                 </div>
               `).join('')}
             </div>

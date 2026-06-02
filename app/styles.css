@@ -836,6 +836,11 @@ a  { color: inherit; text-decoration: none; }
   font-size: var(--text-xs);
   display: flex; align-items: center; justify-content: center;
 }
+.example .step > div:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
 .example .answer {
   margin-top: var(--space-3);
   padding: var(--space-3);

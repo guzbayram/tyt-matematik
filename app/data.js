@@ -65,10 +65,10 @@ window.TOPICS = [
     examples: [
       { question: '√2 sayısının sayı doğrusu üzerindeki yerini gösterelim.',
         steps: [
-          'Sayı doğrusunda 0 ile 1 noktaları arasında dik bir kenar oluşturalım.',
-          'Kenar uzunlukları 1 ve 1 olan dik üçgende hipotenüs uzunluğu Pisagor teoremine göre \\sqrt{1^2+1^2}=\\sqrt{2} olur.',
-          'Pergel/yarıçap düşüncesiyle bu \\sqrt{2} uzunluğu sayı doğrusu üzerine taşındığında 1 ile 2 arasında bir nokta elde edilir.',
-          '\\sqrt{2} rasyonel değildir; sayı doğrusunda gösterilebildiği için gerçek sayıdır.'
+          { text: 'Sayı doğrusunda 0 ile 1 noktaları arasında dik bir kenar oluşturalım.' },
+          { text: 'Kenar uzunlukları 1 ve 1 olan dik üçgende hipotenüs uzunluğu Pisagor teoremine göre √(1² + 1²) = √2 olur.' },
+          { text: 'Pergel/yarıçap düşüncesiyle bu √2 uzunluğu sayı doğrusu üzerine taşındığında 1 ile 2 arasında bir nokta elde edilir.' },
+          { text: '√2 rasyonel değildir; sayı doğrusunda gösterilebildiği için gerçek sayıdır.' }
         ],
         answer: '\\sqrt{2}\\in\\mathbb{R}\\setminus\\mathbb{Q}' }
     ],
