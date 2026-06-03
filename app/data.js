@@ -3196,7 +3196,22 @@ extendTopicPractice(29, {
     ['Oranlar çarpılırsa ne elde edilir?', ['k','2k','k²','1'], 2, 'Oranların çarpımı orantı sabitinin karesidir.'],
     ['Doğru orantıda iki çokluktan biri artarken diğeri nasıl değişir?', ['Aynı oranda artar','Azalır','Sabit kalır','Tanımsız olur'], 0, 'Doğru orantıda değişim aynı yöndedir.'],
     ['Ters orantıda iki çokluktan biri artarken diğeri nasıl değişir?', ['Aynı oranda artar','Aynı oranda azalır','Sabit kalır','Daima artar'], 1, 'Ters orantıda değişim zıt yöndedir.'],
-    ['a ve b ters orantılı ise hangi ifade sabittir?', ['a/b','a+b','a·b','a-b'], 2, 'Ters orantıda çarpım sabittir.']
+    ['a ve b ters orantılı ise hangi ifade sabittir?', ['a/b','a+b','a·b','a-b'], 2, 'Ters orantıda çarpım sabittir.'],
+    ['a ve b doğru orantılı ise hangi ifade sabittir?', ['a/b','a·b','a+b','a-b'], 0, 'Doğru orantıda oran sabittir.'],
+    ['12 ile 18 sayılarının oranı sadeleşirse hangisi olur?', ['2/3','3/2','6/9','12/18'], 0, '12/18 = 2/3 olur.'],
+    ['4 : 7 oranı kesir biçiminde nasıl yazılır?', ['7/4','4/7','4+7','4·7'], 1, 'a : b oranı a/b olarak yazılır.'],
+    ['3/5 = x/20 orantısında x kaçtır?', ['8','10','12','15'], 2, '3·20 = 5x, x = 12.'],
+    ['x/6 = 10/15 orantısında x kaçtır?', ['2','3','4','5'], 2, '10/15 = 2/3 olduğundan x/6 = 2/3 ve x = 4.'],
+    ['2/7 = 6/x orantısında x kaçtır?', ['14','18','21','24'], 2, '2x = 42, x = 21.'],
+    ['a/b = c/d orantısında içteki terimler yer değiştirirse hangisi elde edilir?', ['a/c = b/d','a/d = b/c','a/b = d/c','d/b = c/a'], 3, 'İçler b ve c yer değiştirirse d/b = c/a biçimi kullanılabilir.'],
+    ['a/b = c/d orantısında dıştaki terimler yer değiştirirse hangisi elde edilir?', ['d/b = c/a','a/c = b/d','b/a = c/d','a/d = c/b'], 1, 'Dışlar a ve d yer değiştirirse a/c = b/d biçimi elde edilir.'],
+    ['a/b = c/d = 3 ise (a+c)/(b+d) kaçtır?', ['1','2','3','6'], 2, 'Paylar ve paydalar toplanınca oran sabiti yine 3 olur.'],
+    ['a/b = c/d = 2 ise (a·c)/(b·d) kaçtır?', ['2','3','4','8'], 2, 'Oranlar çarpılırsa k² elde edilir; 2² = 4.'],
+    ['6/9 = 10/15 oranlarının ortak oran sabiti kaçtır?', ['1/2','2/3','3/2','5/3'], 1, 'İki oran da 2/3’e sadeleşir.'],
+    ['Bir orantıda a ve d terimleri nasıl adlandırılır?', ['İçler','Dışlar','Paydalar','Sabitler'], 1, 'a/b = c/d orantısında a ve d dışlardır.'],
+    ['Bir orantıda b ve c terimleri nasıl adlandırılır?', ['Dışlar','Katsayılar','İçler','Üsler'], 2, 'a/b = c/d orantısında b ve c içlerdir.'],
+    ['Doğru orantılı iki çokluk için biri yarıya inerse diğeri ne olur?', ['İkiye katlanır','Yarıya iner','Sabit kalır','Sıfır olur'], 1, 'Doğru orantıda değişim aynı yöndedir.'],
+    ['Ters orantılı iki çokluk için biri iki katına çıkarsa diğeri ne olur?', ['İki katına çıkar','Yarıya iner','Sabit kalır','Dört katına çıkar'], 1, 'Ters orantıda çarpım sabit kalır; biri iki katına çıkarsa diğeri yarıya iner.']
   ])
 });
 
@@ -3292,7 +3307,22 @@ extendTopicPractice(30, {
     ['60 km/s hızla 3 saatte gidilen yol 90 km/s hızla kaç saatte gidilir?', ['1','2','3','4'], 1, '60·3=90·x, x=2.'],
     ['x, 5 ile ters orantılı ise x nasıl yazılır?', ['5k','k/5','x/5','5/x'], 1, 'Ters orantıda x·5=k, x=k/5.'],
     ['x, 5 ile doğru orantılı ise x nasıl yazılabilir?', ['5k','k/5','5/x','x+5'], 0, 'Doğru orantıda x/5=k, x=5k.'],
-    ['144 sayısı 3, 4, 6 ile ters orantılı paylaştırıldığında en küçük pay hangi sayıya karşılık gelir?', ['3','4','6','Hepsi'], 2, 'Ters orantıda büyük sayı daha küçük pay alır.']
+    ['144 sayısı 3, 4, 6 ile ters orantılı paylaştırıldığında en küçük pay hangi sayıya karşılık gelir?', ['3','4','6','Hepsi'], 2, 'Ters orantıda büyük sayı daha küçük pay alır.'],
+    ['5 kg ürün 120 TL ise 8 kg ürün kaç TL olur?', ['160','180','192','200'], 2, 'Doğru orantı: 120/5 = 24, 8·24 = 192.'],
+    ['12 defter 300 TL ise 4 defter kaç TL olur?', ['75','90','100','120'], 2, 'Doğru orantı: 300/12 = 25, 4·25 = 100.'],
+    ['3 işçi bir işi 20 günde bitirirse 5 işçi kaç günde bitirir?', ['8','10','12','15'], 2, 'Ters orantı: 3·20 = 5·x, x = 12.'],
+    ['6 işçi bir işi 18 günde bitirirse 9 işçi kaç günde bitirir?', ['9','10','12','15'], 2, 'Ters orantı: 6·18 = 9·x, x = 12.'],
+    ['Saatte 50 km hızla 6 saatte gidilen yol, saatte 75 km hızla kaç saatte gidilir?', ['3','4','5','6'], 1, 'Aynı yol için hız-zaman ters orantılıdır: 50·6 = 75·x, x = 4.'],
+    ['Bir araç 80 km/s hızla 5 saatte yol alıyor. Aynı yolu 100 km/s hızla kaç saatte alır?', ['3','4','5','6'], 1, '80·5 = 100·x, x = 4.'],
+    ['4 musluk bir havuzu 15 saatte doldurursa 10 musluk kaç saatte doldurur?', ['4','5','6','8'], 2, 'Musluk sayısı ile süre ters orantılıdır: 4·15 = 10·x, x = 6.'],
+    ['3 usta 7 günde 84 m² iş yaparsa 5 usta 7 günde kaç m² iş yapar?', ['120','130','140','150'], 2, 'Süre aynıysa usta sayısı ve iş miktarı doğru orantılıdır: 84/3 = 28, 5·28 = 140.'],
+    ['Bir yiyecek 6 kişiye 20 gün yetiyorsa 10 kişiye kaç gün yeter?', ['8','10','12','15'], 2, 'Kişi sayısı ve süre ters orantılıdır: 6·20 = 10·x, x = 12.'],
+    ['Bir harita ölçeğinde 3 cm gerçek hayatta 18 km ise 7 cm kaç km gösterir?', ['36','40','42','48'], 2, 'Doğru orantı: 18/3 = 6, 7·6 = 42.'],
+    ['Bir miktar para 2, 3 ve 5 ile doğru orantılı paylaştırılırsa en büyük pay hangi sayıya karşılık gelir?', ['2','3','5','Hepsi'], 2, 'Doğru orantıda büyük sayı daha büyük pay alır.'],
+    ['Bir miktar para 2, 3 ve 5 ile ters orantılı paylaştırılırsa en büyük pay hangi sayıya karşılık gelir?', ['2','3','5','Hepsi'], 0, 'Ters orantıda küçük sayı daha büyük pay alır.'],
+    ['120 sayısı 2 ve 3 ile doğru orantılı paylaştırılırsa büyük pay kaçtır?', ['48','60','72','80'], 2, 'Paylar 2k ve 3k olur; 5k=120, k=24, büyük pay 72.'],
+    ['120 sayısı 2 ve 3 ile ters orantılı paylaştırılırsa büyük pay kaçtır?', ['48','60','72','80'], 2, 'Paylar k/2 ve k/3 olur; toplam 5k/6=120, k=144, büyük pay 72.'],
+    ['Bir problemde ürün miktarı artınca ödenecek para da aynı oranda artıyorsa hangi denklem tipi seçilir?', ['Doğru orantı','Ters orantı','Mutlak değer','Köklü denklem'], 0, 'Aynı yönde değişim doğru orantıdır.']
   ])
 });
 
