@@ -5,7 +5,8 @@
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "theme": "dark",
   "accent": "purple",
-  "anim": "full"
+  "anim": "full",
+  "textSize": "normal"
 }/*EDITMODE-END*/;
 
 const TWEAK_KEY = 'tyt_matematik_tweaks';
@@ -33,6 +34,7 @@ function applyTweaks(t) {
   root.setAttribute('data-theme', t.theme);
   root.setAttribute('data-accent', t.accent);
   root.setAttribute('data-anim', t.anim);
+  root.setAttribute('data-text-size', t.textSize);
 }
 
 let tweakState = loadTweaks();
@@ -92,6 +94,16 @@ function renderPanel() {
         <button class="${tweakState.anim === 'low' ? 'active' : ''}" data-tweak-act="set" data-key="anim" data-value="low">Hafif</button>
         <button class="${tweakState.anim === 'off' ? 'active' : ''}" data-tweak-act="set" data-key="anim" data-value="off">Kapalı</button>
       </div>
+    </section>
+
+    <section>
+      <div class="label">Metin Boyutu</div>
+      <div class="seg">
+        <button class="${tweakState.textSize === 'normal' ? 'active' : ''}" data-tweak-act="set" data-key="textSize" data-value="normal">Normal</button>
+        <button class="${tweakState.textSize === 'large' ? 'active' : ''}" data-tweak-act="set" data-key="textSize" data-value="large">Büyük</button>
+        <button class="${tweakState.textSize === 'xlarge' ? 'active' : ''}" data-tweak-act="set" data-key="textSize" data-value="xlarge">Çok Büyük</button>
+      </div>
+      <div class="text-preview">Örnek: Doğal sayılar kümesi N ile gösterilir.</div>
     </section>
 
     <button class="reset" data-tweak-act="reset">Varsayılana sıfırla</button>

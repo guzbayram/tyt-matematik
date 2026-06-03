@@ -40,16 +40,33 @@ function defaultProgress() {
   };
 }
 
+function emptyProgress(name = 'Öğrenci') {
+  return {
+    completed: [],
+    scores: {},
+    weak: [],
+    xp: 0,
+    streak: 0,
+    badges: [],
+    lastSession: new Date().toISOString().slice(0, 10),
+    name
+  };
+}
+
 let state = {
   screen: 'dashboard', // dashboard | unit | topic | quiz | progress | profile
   unitId: null,
   topicId: null,
   topicTab: 'theory', // theory | example | quiz-intro
   geometryViewer: null, // { topicId, cardIndex }
+  numberSetSim: { selected: 0, placed: {}, feedback: null },
+  numberLineSim: { selected: 0, placed: {}, feedback: null },
   quiz: null,         // { topicId, index, answers, correct, finished, selected }
   progress: loadProgress(),
   toast: null
 };
+
+let quizAutoAdvanceTimer = null;
 
 function loadProgress() {
   try {
@@ -66,7 +83,12 @@ function saveProgress() {
 }
 
 function resetProgress() {
-  state.progress = defaultProgress();
+  const name = state.progress?.name || 'Öğrenci';
+  state.progress = emptyProgress(name);
+  state.quiz = null;
+  state.numberSetSim = { selected: 0, placed: {}, feedback: null };
+  state.numberLineSim = { selected: 0, placed: {}, feedback: null };
+  clearQuizAutoAdvance();
   saveProgress();
 }
 
@@ -189,17 +211,267 @@ function renderKatex(root) {
       el.textContent = el.dataset.tex;
     }
   });
+  fitFormulaBlocks(root);
+  requestAnimationFrame(() => fitFormulaBlocks(root));
   // inline $..$ in text nodes
   root.querySelectorAll('[data-inline-tex]').forEach(el => {
     const text = el.textContent;
-    if (text.includes('$')) {
-      el.innerHTML = text.replace(/\$([^$]+)\$/g, (m, tex) => {
-        try {
-          return katex.renderToString(tex, { throwOnError: false });
-        } catch (e) { return m; }
-      });
+    const hasExplicitMath = text.includes('$');
+    const hasSimpleFraction = /(^|[^\w\\])(-?\d+|[a-zA-Z])\/(-?\d+|[a-zA-Z])(?![\w])/u.test(text);
+    if (!hasExplicitMath && !hasSimpleFraction) return;
+
+    const renderTex = tex => {
+      try {
+        return katex.renderToString(tex, { throwOnError: false });
+      } catch (e) {
+        return escapeHtml(tex);
+      }
+    };
+    const renderPlainSegment = segment => escapeHtml(segment).replace(
+      /(^|[^\w\\])(-?\d+|[a-zA-Z])\/(-?\d+|[a-zA-Z])(?![\w])/gu,
+      (m, prefix, numerator, denominator) => `${prefix}${renderTex(`\\frac{${numerator}}{${denominator}}`)}`
+    );
+
+    const pieces = text.split(/\$([^$]+)\$/g);
+    el.innerHTML = pieces.map((piece, index) => (
+      index % 2 === 1 ? renderTex(piece) : renderPlainSegment(piece)
+    )).join('');
+  });
+}
+
+function fitFormulaBlocks(root) {
+  root.querySelectorAll('.formula').forEach(box => {
+    const katexNode = box.querySelector('.katex-display > .katex, .katex');
+    if (!katexNode) return;
+
+    katexNode.style.removeProperty('--formula-scale');
+    katexNode.classList.remove('formula-scaled');
+
+    const available = box.clientWidth - 8;
+    const needed = katexNode.scrollWidth;
+    if (available > 0 && needed > available) {
+      const scale = Math.max(0.56, Math.min(1, available / needed));
+      katexNode.style.setProperty('--formula-scale', scale.toFixed(3));
+      katexNode.classList.add('formula-scaled');
     }
   });
+}
+
+function renderNumberSetSimulation(interactive) {
+  if (!interactive || interactive.type !== 'number-set-sim') return '';
+
+  const sim = state.numberSetSim || { selected: 0, placed: {}, feedback: null };
+  const selectedIndex = Math.min(Math.max(sim.selected || 0, 0), interactive.numbers.length - 1);
+  const selected = interactive.numbers[selectedIndex];
+  const placedCount = Object.keys(sim.placed || {}).filter(key => sim.placed[key] === true).length;
+  const complete = placedCount === interactive.numbers.length;
+
+  return `
+    <section class="number-set-sim" aria-label="${escapeAttr(interactive.title)}">
+      <div class="number-set-head">
+        <div>
+          <h3>${escapeHtml(interactive.title)}</h3>
+          <p>${formatRichText(interactive.intro)}</p>
+        </div>
+        <div class="number-set-progress">${placedCount}/${interactive.numbers.length}</div>
+      </div>
+
+      <div class="number-set-board">
+        <div class="number-bank" aria-label="Sayı kartları">
+          ${interactive.numbers.map((item, i) => {
+            const done = sim.placed && sim.placed[i] === true;
+            return `
+              <button class="number-chip ${i === selectedIndex ? 'active' : ''} ${done ? 'done' : ''}"
+                data-act="number-sim-select" data-idx="${i}" type="button">
+              <span>${formatRichText(item.value)}</span>
+                ${done ? '<b>✓</b>' : ''}
+              </button>
+            `;
+          }).join('')}
+        </div>
+
+        <div class="number-set-current">
+          <span>Seçili sayı</span>
+          <strong>${formatRichText(selected.value)}</strong>
+        </div>
+
+        <div class="number-set-zones" aria-label="Sayı kümeleri">
+          ${interactive.zones.map(zone => `
+            <button class="number-zone" data-act="number-sim-place" data-zone="${escapeAttr(zone.id)}" type="button">
+              <span class="zone-symbol">${escapeHtml(zone.symbol)}</span>
+              <span class="zone-label">${formatRichText(zone.label)}</span>
+              <small>${formatRichText(zone.hint)}</small>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+
+      ${sim.feedback ? `
+        <div class="number-set-feedback ${sim.feedback.correct ? 'correct' : 'wrong'}">
+          <strong>${sim.feedback.correct ? 'Doğru' : 'Tekrar düşün'}</strong>
+          <span>${formatRichText(sim.feedback.message)}</span>
+        </div>
+      ` : ''}
+
+      ${complete ? `
+        <div class="number-set-complete">
+          Tüm sayıları yerleştirdin. N ⊂ Z ⊂ Q ⊂ R ve Q ∪ Q′ = R ilişkisini tekrar gözden geçir.
+        </div>
+      ` : ''}
+    </section>
+  `;
+}
+
+function renderNumberLineSimulation(interactive) {
+  if (!interactive || interactive.type !== 'number-line-sim') return '';
+
+  const sim = state.numberLineSim || { selected: 0, placed: {}, feedback: null };
+  const selectedIndex = Math.min(Math.max(sim.selected || 0, 0), interactive.numbers.length - 1);
+  const selected = interactive.numbers[selectedIndex];
+  const placedCount = Object.keys(sim.placed || {}).filter(key => sim.placed[key] === true).length;
+  const complete = placedCount === interactive.numbers.length;
+
+  return `
+    <section class="number-set-sim number-line-sim" aria-label="${escapeAttr(interactive.title)}">
+      <div class="number-set-head">
+        <div>
+          <h3>${escapeHtml(interactive.title)}</h3>
+          <p>${formatRichText(interactive.intro)}</p>
+        </div>
+        <div class="number-set-progress">${placedCount}/${interactive.numbers.length}</div>
+      </div>
+
+      <div class="number-set-board">
+        <div class="number-bank" aria-label="Sayı kartları">
+          ${interactive.numbers.map((item, i) => {
+            const done = sim.placed && sim.placed[i] === true;
+            return `
+              <button class="number-chip ${i === selectedIndex ? 'active' : ''} ${done ? 'done' : ''}"
+                data-act="number-line-select" data-idx="${i}" type="button">
+              <span>${formatRichText(item.value)}</span>
+                ${done ? '<b>✓</b>' : ''}
+              </button>
+            `;
+          }).join('')}
+        </div>
+
+        <div class="number-set-current">
+          <span>Seçili sayı</span>
+          <strong>${formatRichText(selected.value)}</strong>
+        </div>
+
+        <div class="number-line-track" aria-hidden="true">
+          <span>-</span><i></i><b>0</b><i></i><b>1</b><i></i><b>2</b><i></i><b>3</b><i></i><span>+</span>
+        </div>
+
+        <div class="number-line-zones" aria-label="Sayı doğrusu aralıkları">
+          ${interactive.intervals.map(interval => `
+            <button class="number-line-zone" data-act="number-line-place" data-interval="${escapeAttr(interval.id)}" type="button">
+              <span>${escapeHtml(interval.label)}</span>
+              <small>${formatRichText(interval.hint)}</small>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+
+      ${sim.feedback ? `
+        <div class="number-set-feedback ${sim.feedback.correct ? 'correct' : 'wrong'}">
+          <strong>${sim.feedback.correct ? 'Doğru' : 'Tekrar düşün'}</strong>
+          <span>${formatRichText(sim.feedback.message)}</span>
+        </div>
+      ` : ''}
+
+      ${complete ? `
+        <div class="number-set-complete">
+          Tüm sayıları aralığa yerleştirdin. Her gerçek sayı sayı doğrusunda bir nokta belirtir; gerçek olmayan sayıların noktası yoktur.
+        </div>
+      ` : ''}
+    </section>
+  `;
+}
+
+function renderTopicSimulations(t) {
+  const cards = [
+    renderNumberSetSimulation(t.interactive),
+    renderNumberLineSimulation(t.numberLineInteractive)
+  ].filter(Boolean);
+
+  if (!cards.length) return '';
+  return `<div class="topic-simulations">${cards.join('')}</div>`;
+}
+
+function handleNumberSimSelect(idx) {
+  const t = findTopic(state.topicId);
+  const interactive = t && t.interactive;
+  if (!interactive || interactive.type !== 'number-set-sim') return;
+  if (idx < 0 || idx >= interactive.numbers.length) return;
+  state.numberSetSim = {
+    ...(state.numberSetSim || {}),
+    selected: idx,
+    feedback: null
+  };
+  render();
+}
+
+function handleNumberSimPlace(zoneId) {
+  const t = findTopic(state.topicId);
+  const interactive = t && t.interactive;
+  if (!interactive || interactive.type !== 'number-set-sim') return;
+
+  const sim = state.numberSetSim || { selected: 0, placed: {}, feedback: null };
+  const selectedIndex = Math.min(Math.max(sim.selected || 0, 0), interactive.numbers.length - 1);
+  const item = interactive.numbers[selectedIndex];
+  const correct = item.target === zoneId;
+  const nextPlaced = { ...(sim.placed || {}) };
+  if (correct) nextPlaced[selectedIndex] = true;
+
+  const nextUnplaced = interactive.numbers.findIndex((_, i) => !nextPlaced[i]);
+  state.numberSetSim = {
+    selected: correct && nextUnplaced >= 0 ? nextUnplaced : selectedIndex,
+    placed: nextPlaced,
+    feedback: {
+      correct,
+      message: correct ? item.note : `${item.value} için en dar kümeyi düşün: ${item.note}`
+    }
+  };
+  render();
+}
+
+function handleNumberLineSelect(idx) {
+  const t = findTopic(state.topicId);
+  const interactive = t && t.numberLineInteractive;
+  if (!interactive || interactive.type !== 'number-line-sim') return;
+  if (idx < 0 || idx >= interactive.numbers.length) return;
+  state.numberLineSim = {
+    ...(state.numberLineSim || {}),
+    selected: idx,
+    feedback: null
+  };
+  render();
+}
+
+function handleNumberLinePlace(intervalId) {
+  const t = findTopic(state.topicId);
+  const interactive = t && t.numberLineInteractive;
+  if (!interactive || interactive.type !== 'number-line-sim') return;
+
+  const sim = state.numberLineSim || { selected: 0, placed: {}, feedback: null };
+  const selectedIndex = Math.min(Math.max(sim.selected || 0, 0), interactive.numbers.length - 1);
+  const item = interactive.numbers[selectedIndex];
+  const correct = item.target === intervalId;
+  const nextPlaced = { ...(sim.placed || {}) };
+  if (correct) nextPlaced[selectedIndex] = true;
+
+  const nextUnplaced = interactive.numbers.findIndex((_, i) => !nextPlaced[i]);
+  state.numberLineSim = {
+    selected: correct && nextUnplaced >= 0 ? nextUnplaced : selectedIndex,
+    placed: nextPlaced,
+    feedback: {
+      correct,
+      message: correct ? item.note : `${item.value} için sayı doğrusundaki yaklaşık konumu düşün: ${item.note}`
+    }
+  };
+  render();
 }
 
 function tex(s, display = false) {
@@ -208,6 +480,263 @@ function tex(s, display = false) {
 }
 function escapeAttr(s) { return String(s).replace(/"/g, '&quot;'); }
 function escapeHtml(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+const PDF_EMPHASIS_TERMS = [
+  'Gerçek Sayıların Sayı Doğrusunda Gösterilmesi',
+  'Negatif ve Pozitif Sayılarda Çarpma ve Bölme İşaret Kuralı',
+  'Gerçek sayılar kümesinde toplama ve çarpma işlemleri',
+  'Birinci Dereceden Bir Bilinmeyenli Denklemler',
+  'Eşittir işareti',
+  'değişkeni herhangi bir sembol',
+  'eklenir',
+  'çıkarılırsa',
+  'çarpmak',
+  'bölmek',
+  'sağlama',
+  'Aralarında Asal Sayılar',
+  'Tam Sayılarda Kalanlı Bölme',
+  'Bölünebilme Kuralları',
+  'Pozitif Tam Kuvvetler',
+  'Toplama ve Çıkarma',
+  'Terimlerin Toplamı',
+  'Sayı Basamakları',
+  'Pozitif Sayılar',
+  'Negatif Sayılar',
+  'Çift Sayılar',
+  'Tek Sayılar',
+  'Doğal Sayılar',
+  'Tam Sayılar',
+  'Rasyonel Sayılar',
+  'İrrasyonel Sayılar',
+  'Gerçek Sayılar',
+  'Sayı Doğrusu',
+  'Kapalılık Özelliği',
+  'Değişme Özelliği',
+  'Birleşme Özelliği',
+  'Birim Eleman',
+  'Ters Eleman',
+  'Yutan Eleman',
+  'Dağılma Özelliği',
+  'İşlem Önceliği',
+  'Ardışık Sayılar',
+  'Ardışık Çift Sayılar',
+  'Ardışık Tek Sayılar',
+  'Ortak Fark',
+  'Terim Sayısı',
+  'Ortanca Terim',
+  'Sayı Değeri',
+  'Basamak Değeri',
+  'Basamak',
+  'Rakamlar Kümesi',
+  'Rakam',
+  'Asal Sayı',
+  'Negatif Asal Sayı',
+  'Bölme Algoritması',
+  'Tam Bölünme',
+  'Kalan İşlemleri',
+  'Kalanlı Bölme',
+  'Kalan sayı',
+  'Bölümünden kalan',
+  'Bölünen',
+  'Bölen',
+  'Bölüm',
+  'Almaşık Toplam',
+  'EBOB',
+  'EKOK',
+  'Mutlak Değer',
+  'Üslü İfadeler',
+  'Köklü İfadeler',
+  'Yüzde',
+  'Mod',
+  'Medyan',
+  'Aritmetik Ortalama',
+  'Açıklık',
+  'Köklü Sayılar'
+];
+
+const PDF_EMPHASIS_DYNAMIC_TERMS = [
+  ...PDF_EMPHASIS_TERMS,
+  ...(window.UNITS || []).flatMap(u => [u.name, u.short]),
+  ...(window.TOPICS || []).flatMap(t => [
+    t.title,
+    ...(t.full && t.theory && t.theory.rules ? t.theory.rules.map(r => r.title).filter(Boolean) : [])
+  ])
+];
+
+const PDF_EMPHASIS_EXCLUDED_TERMS = new Set([
+  'basamak',
+  'rakam'
+]);
+
+const PDF_EMPHASIS_PATTERN = new RegExp(
+  `(?<![\\p{L}\\p{N}_])(${[...new Set(PDF_EMPHASIS_DYNAMIC_TERMS)]
+    .filter(term => term && String(term).trim().length >= 3)
+    .filter(term => !PDF_EMPHASIS_EXCLUDED_TERMS.has(String(term).trim().toLocaleLowerCase('tr-TR')))
+    .map(term => escapeRegExp(escapeHtml(term)))
+    .sort((a, b) => b.length - a.length)
+    .join('|')})(?![\\p{L}\\p{N}_])`,
+  'giu'
+);
+
+function escapeRegExp(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function formatRichText(s) {
+  const escaped = escapeHtml(s || '');
+  if (!escaped) return '';
+  return escaped.replace(PDF_EMPHASIS_PATTERN, '<strong class="pdf-emphasis">$1</strong>');
+}
+
+function renderExampleQuestion(ex) {
+  if (Array.isArray(ex.questionBlocks)) {
+    return `
+      <div class="example-question example-question-block">
+        ${ex.questionBlocks.map(block => {
+          if (block && typeof block === 'object' && block.tex) {
+            return `<div class="example-question-tex" data-tex="${escapeAttr(block.tex)}" data-display="false"></div>`;
+          }
+          return `<div>${formatRichText(block)}</div>`;
+        }).join('')}
+      </div>
+    `;
+  }
+  return `<span class="example-question" data-inline-tex>${formatRichText(ex.question)}</span>`;
+}
+
+function renderIntervalLines(lines) {
+  if (!Array.isArray(lines) || !lines.length) return '';
+  return `
+    <div class="interval-lines" aria-label="Sayı doğrusu üzerinde aralık gösterimleri">
+      ${lines.map(line => {
+        const variant = line.variant || 'finite';
+        const leftClass = line.leftClosed ? 'closed' : 'open';
+        const rightClass = line.rightClosed ? 'closed' : 'open';
+        return `
+          <div class="interval-line interval-line-${escapeAttr(variant)}">
+            <div class="interval-axis">
+              <span class="interval-arrow interval-arrow-left">←</span>
+              <span class="interval-point interval-point-left ${leftClass}">${escapeHtml(line.left || '')}</span>
+              <span class="interval-segment"></span>
+              <span class="interval-point interval-point-right ${rightClass}">${escapeHtml(line.right || '')}</span>
+              <span class="interval-arrow interval-arrow-right">→</span>
+            </div>
+            <div class="interval-label">${escapeHtml(line.label || '')}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderNumberedItems(items) {
+  if (!Array.isArray(items) || !items.length) return '';
+  return `
+    <ol class="numbered-items">
+      ${items.map(item => `
+        <li>
+          <div class="numbered-main">${formatRichText(item.text)}</div>
+          ${Array.isArray(item.lines) ? `
+            <div class="numbered-sub-lines">
+              ${item.lines.map(line => `<p>${formatRichText(line)}</p>`).join('')}
+            </div>
+          ` : ''}
+          ${Array.isArray(item.mathLines) ? `
+            <div class="numbered-math-lines">
+              ${item.mathLines.map(line => `<div data-tex="${escapeAttr(line)}" data-display="false"></div>`).join('')}
+            </div>
+          ` : ''}
+        </li>
+      `).join('')}
+    </ol>
+  `;
+}
+
+function renderStatementBlocks(items) {
+  if (!Array.isArray(items) || !items.length) return '';
+  return `
+    <div class="statement-blocks">
+      ${items.map(item => `
+        <div class="statement-block">
+          <div class="statement-main">${formatRichText(item.text || '')}</div>
+          ${Array.isArray(item.mathLines) ? `
+            <div class="statement-math-lines">
+              ${item.mathLines.map(line => `<div data-tex="${escapeAttr(line)}" data-display="false"></div>`).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderInequalityVisuals(items) {
+  if (!Array.isArray(items) || !items.length) return '';
+  return `
+    <div class="ineq-visuals" aria-label="Analitik düzlemde eşitsizlik gösterimleri">
+      ${items.map(item => `
+        <div class="ineq-visual ${item.variant === 'dashed' ? 'is-dashed' : 'is-solid'} ${item.slope === 'negative' ? 'slope-negative' : 'slope-positive'} ${item.shade === 'above' ? 'shade-above' : 'shade-below'}">
+          <div class="ineq-plane">
+            <span class="axis axis-x"></span>
+            <span class="axis axis-y"></span>
+            <span class="origin">O</span>
+            <span class="ineq-shade"></span>
+            <span class="ineq-line"></span>
+          </div>
+          <div class="ineq-label">${formatRichText(item.label)}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderExampleStepContent(step) {
+  if (typeof step === 'string') {
+    return `<span data-tex="${escapeAttr(step)}" data-display="false"></span>`;
+  }
+  const text = step.text ? `<div>${formatRichText(step.text)}</div>` : '';
+  const interval = step.intervalLine ? renderIntervalLines([step.intervalLine]) : '';
+  const intervals = Array.isArray(step.intervalLines) ? renderIntervalLines(step.intervalLines) : '';
+  return `${text}${interval}${intervals}`;
+}
+
+function renderDivisionVisual(kind) {
+  if (kind === 'swap') {
+    return `
+      <div class="division-visual division-visual-swap" aria-label="Bölen ve bölüm yer değiştirirse kalan değişmez">
+        <div class="long-division mini">
+          <span class="dividend">A</span>
+          <span class="divisor">B</span>
+          <span class="quotient">C</span>
+          <span class="minus">−</span>
+          <span class="remainder">K</span>
+        </div>
+        <div class="long-division mini">
+          <span class="dividend">B</span>
+          <span class="divisor">D</span>
+          <span class="quotient">E</span>
+          <span class="minus">−</span>
+          <span class="remainder">F</span>
+        </div>
+      </div>
+    `;
+  }
+  return `
+    <div class="division-visual division-visual-parts" aria-label="Bölme algoritmasında bölünen, bölen, bölüm ve kalan">
+      <div class="long-division labeled">
+        <span class="label dividend-label">Bölünen</span>
+        <span class="label divisor-label">Bölen</span>
+        <span class="label quotient-label">Bölüm</span>
+        <span class="label remainder-label">Kalan</span>
+        <span class="symbol dividend">A</span>
+        <span class="symbol divisor">B</span>
+        <span class="symbol quotient">C</span>
+        <span class="symbol remainder">K</span>
+        <span class="minus">−</span>
+      </div>
+    </div>
+  `;
+}
 
 // ─────────────────────────────────────────────────────────────
 // NAVIGATION
@@ -433,15 +962,104 @@ function renderGeometryViewer() {
 }
 
 function startQuiz(topicId) {
+  clearQuizAutoAdvance();
+  const topic = findTopic(topicId);
   state.quiz = {
     topicId,
     index: 0,
-    answers: [],   // index of selected option for each question
+    answers: Array(topic.quiz.length).fill(null),
     finished: false,
     selected: null,
-    revealed: false
+    revealed: false,
+    feedback: null
   };
   go('quiz');
+}
+
+function clearQuizAutoAdvance() {
+  if (quizAutoAdvanceTimer) {
+    clearTimeout(quizAutoAdvanceTimer);
+    quizAutoAdvanceTimer = null;
+  }
+}
+
+function playQuizFeedbackSound(correct) {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = correct ? 'sine' : 'square';
+    osc.frequency.value = correct ? 740 : 180;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.22);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.24);
+    setTimeout(() => ctx.close().catch(() => {}), 360);
+  } catch (e) {}
+}
+
+function moveQuizTo(index) {
+  clearQuizAutoAdvance();
+  const q = state.quiz;
+  if (!q) return;
+  const total = findTopic(q.topicId).quiz.length;
+  q.index = Math.max(0, Math.min(index, total - 1));
+  q.selected = q.answers[q.index];
+  q.revealed = q.answers[q.index] != null;
+  q.feedback = null;
+  render();
+}
+
+function finishQuiz() {
+  clearQuizAutoAdvance();
+  const q = state.quiz;
+  const t = findTopic(q.topicId);
+  const correctCount = q.answers.filter((a, i) => a === t.quiz[i].a).length;
+  const score = Math.round(correctCount / t.quiz.length * 100);
+  state.progress.scores[t.id] = score;
+  if (correctCount === t.quiz.length) state.progress.xp += 100;
+  if (score >= 80) state.progress.weak = state.progress.weak.filter(id => id !== t.id);
+  else if (!state.progress.weak.includes(t.id)) state.progress.weak.push(t.id);
+  if (!state.progress.completed.includes(t.id)) {
+    state.progress.completed.push(t.id);
+    state.progress.xp += 200;
+  }
+  checkBadges();
+  saveProgress();
+  state.quiz.finished = true;
+  render();
+}
+
+function answerQuizQuestion(answerIndex) {
+  const q = state.quiz;
+  if (!q || q.answers[q.index] != null) return;
+
+  const tq = findTopic(q.topicId).quiz[q.index];
+  const correct = answerIndex === tq.a;
+  q.selected = answerIndex;
+  q.answers[q.index] = answerIndex;
+  q.revealed = true;
+  q.feedback = { index: q.index, kind: correct ? 'correct' : 'wrong' };
+  playQuizFeedbackSound(correct);
+  state.progress.xp += correct ? 50 : 5;
+  saveProgress();
+  render();
+
+  if (correct) {
+    const expectedIndex = q.index;
+    clearQuizAutoAdvance();
+    quizAutoAdvanceTimer = setTimeout(() => {
+      if (!state.quiz || state.quiz.finished || state.quiz.index !== expectedIndex) return;
+      const total = findTopic(state.quiz.topicId).quiz.length;
+      if (expectedIndex + 1 < total) moveQuizTo(expectedIndex + 1);
+      else finishQuiz();
+    }, 1100);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -610,7 +1228,7 @@ function renderTopic() {
         <div class="callout info">
           <div>
             <strong>Konu Kartları</strong>
-            <div class="copy">${escapeHtml(t.summary)}</div>
+            <div class="copy">${formatRichText(t.summary)}</div>
           </div>
         </div>
         <div class="geometry-card-list">
@@ -629,7 +1247,7 @@ function renderTopic() {
         <div class="callout info">
           <div>
             <strong>Kısa Özet</strong>
-            <div class="copy">${escapeHtml(t.summary)}</div>
+            <div class="copy">${formatRichText(t.summary)}</div>
           </div>
         </div>
         <div class="card" style="text-align:center;padding:32px 16px;color:var(--text-secondary)">
@@ -643,18 +1261,86 @@ function renderTopic() {
     body = `
       <div class="tab-content">
         ${t.theory.rules.map((r, i) => `
-          <div class="rule">
-            <h3>${escapeHtml(r.title)}</h3>
-            <div class="formula"><div data-tex="${escapeAttr(r.formula)}" data-display="true"></div></div>
-            <div class="tip">${escapeHtml(r.tip)}</div>
-          </div>
+          ${r.type === 'warning'
+            ? `
+              <div class="callout warn rule-warning">
+                <div>
+                  <strong>⚠ Dikkat</strong>
+                  ${r.textBeforeVisual ? `<div class="copy">${formatRichText(r.textBeforeVisual)}</div>` : ''}
+                  ${r.divisionVisual ? renderDivisionVisual(r.divisionVisual) : ''}
+                  ${r.formula ? `<div class="warning-formula" data-tex="${escapeAttr(r.formula)}" data-display="true"></div>` : ''}
+                  ${r.text ? `<div class="copy">${formatRichText(r.text)}</div>` : ''}
+                  ${Array.isArray(r.items) ? `
+                    <ul class="warning-list">
+                      ${r.items.map(item => `<li>${formatRichText(item)}</li>`).join('')}
+                    </ul>
+                  ` : ''}
+                  ${r.textAfterVisual ? `<div class="copy">${formatRichText(r.textAfterVisual)}</div>` : ''}
+                </div>
+              </div>
+            `
+            : `
+              <div class="rule${r.className ? ` ${escapeAttr(r.className)}` : ''}">
+                <h3>${escapeHtml(r.title)}</h3>
+                <div class="formula${r.plainFormula ? ' formula-plain' : ''}">
+                  ${r.text ? `<div class="rule-body-text">${formatRichText(r.text)}</div>` : ''}
+                  ${r.divisionVisual
+                    ? renderDivisionVisual(r.divisionVisual)
+                    : r.signTable
+                    ? `
+                      <div class="sign-rule-card sign-rule-card-inline">
+                        <div class="sign-rule-table-wrap">
+                          <table class="sign-rule-table">
+                            <thead>
+                              <tr>${(r.signTable.headers || []).map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr>
+                            </thead>
+                            <tbody>
+                              ${(r.signTable.rows || []).map(row => `
+                                <tr>${row.map(cell => `<td>${formatRichText(cell)}</td>`).join('')}</tr>
+                              `).join('')}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    `
+                    : r.plainFormula
+                    ? `<div class="plain-formula-text">${r.noRichText ? escapeHtml(r.plainFormula) : formatRichText(r.plainFormula)}</div>`
+                    : Array.isArray(r.formulaLabelLines)
+                    ? `<div class="formula-label-lines">${r.formulaLabelLines.map(row => `
+                        <div class="formula-label-row">
+                          <div class="formula-label-math" data-tex="${escapeAttr(row.tex)}" data-display="true"></div>
+                          <div class="formula-label-copy">${formatRichText(row.label)}</div>
+                        </div>
+                      `).join('')}</div>`
+                    : Array.isArray(r.statementBlocks)
+                    ? renderStatementBlocks(r.statementBlocks)
+                    : Array.isArray(r.numberedItems)
+                    ? `${Array.isArray(r.formulaLines) ? `<div class="formula-lines formula-lines-before-list">${r.formulaLines.map(line => `<div data-tex="${escapeAttr(line)}" data-display="true"></div>`).join('')}</div>` : ''}${renderNumberedItems(r.numberedItems)}`
+                    : Array.isArray(r.formulaLines)
+                    ? `<div class="formula-lines">${r.formulaLines.map(line => `<div data-tex="${escapeAttr(line)}" data-display="true"></div>`).join('')}</div>`
+                    : r.formula
+                    ? `<div data-tex="${escapeAttr(r.formula)}" data-display="true"></div>`
+                    : ''}
+                  ${r.intervalLines ? renderIntervalLines(r.intervalLines) : ''}
+                  ${r.inequalityVisuals ? renderInequalityVisuals(r.inequalityVisuals) : ''}
+                </div>
+                ${r.tip ? `<div class="tip"><span class="tip-copy">${formatRichText(r.tip)}</span></div>` : ''}
+                ${Array.isArray(r.tipLines) ? `
+                  <div class="tip tip-lines">
+                    <div class="tip-copy">
+                      ${r.tipLines.map(line => `<p>${formatRichText(line)}</p>`).join('')}
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            `}
         `).join('')}
 
         ${t.theory.warning ? `
           <div class="callout warn">
             <div>
               <strong>⚠ Dikkat</strong>
-              <div class="copy">${escapeHtml(t.theory.warning)}</div>
+              <div class="copy">${formatRichText(t.theory.warning)}</div>
             </div>
           </div>
         ` : ''}
@@ -665,11 +1351,36 @@ function renderTopic() {
             <ul>
               ${t.theory.facts.map(f => {
                 if (typeof f === 'string') return `<li><span data-tex="${escapeAttr(f)}" data-display="true"></span></li>`;
-                return `<li>${escapeHtml(f.text || '')}</li>`;
+                if (f.type === 'sign-table') {
+                  return `
+                    <li class="fact-table-item">
+                      <div class="sign-rule-card">
+                        <div class="sign-rule-title">${formatRichText(f.title || '')}</div>
+                        <div class="sign-rule-table-wrap">
+                          <table class="sign-rule-table">
+                            <thead>
+                              <tr>
+                                ${(f.headers || []).map(h => `<th>${escapeHtml(h)}</th>`).join('')}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              ${(f.rows || []).map(row => `
+                                <tr>${row.map(cell => `<td>${formatRichText(cell)}</td>`).join('')}</tr>
+                              `).join('')}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </li>
+                  `;
+                }
+                return `<li>${formatRichText(f.text || '')}</li>`;
               }).join('')}
             </ul>
           </div>
         ` : ''}
+
+        ${renderTopicSimulations(t)}
       </div>
     `;
   } else if (state.topicTab === 'example') {
@@ -677,14 +1388,15 @@ function renderTopic() {
       <div class="tab-content">
         ${t.examples.map((ex, i) => `
           <div class="example">
-            <div class="q">Örnek ${i + 1}. ${escapeHtml(ex.question)}</div>
+            <div class="q">
+              <span class="example-label">Örnek ${i + 1}</span>
+              ${renderExampleQuestion(ex)}
+            </div>
             <div class="steps">
               ${ex.steps.map((s, si) => `
                 <div class="step">
                   <div class="step-n">${si + 1}</div>
-                  <div>${typeof s === 'string'
-                    ? `<span data-tex="${escapeAttr(s)}" data-display="false"></span>`
-                    : escapeHtml(s.text || '')}</div>
+                  <div>${renderExampleStepContent(s)}</div>
                 </div>
               `).join('')}
             </div>
@@ -695,7 +1407,7 @@ function renderTopic() {
         <div class="callout info">
           <div>
             <strong>İyi gidiyorsun!</strong>
-            <div class="copy">Şimdi quiz'e geçip öğrendiklerini test edelim. 5 soruluk hızlı bir alıştırma.</div>
+            <div class="copy">Şimdi quiz'e geçip öğrendiklerini test edelim. ${t.quiz.length} soruluk bir alıştırma.</div>
           </div>
         </div>
       </div>
@@ -708,7 +1420,7 @@ function renderTopic() {
           <h2 style="font-size:var(--text-xl);font-weight:700;margin-bottom:6px">${t.quiz.length} soruluk quiz</h2>
           <div style="color:var(--text-secondary);font-size:var(--text-sm);margin-bottom:20px">
             Her doğru +50 XP · Sayfa başında kazanabileceğin: <b style="color:var(--xp-gold)">+${t.quiz.length * 50} XP</b>
-            ${score === 100 ? '' : '<br>5/5 yaparsan: <b style="color:var(--xp-gold)">+100 XP bonus</b>'}
+            ${score === 100 ? '' : '<br>Tüm soruları doğru yaparsan: <b style="color:var(--xp-gold)">+100 XP bonus</b>'}
           </div>
           ${score != null ? `
             <div class="chip ${score >= 80 ? 'success' : score >= 60 ? 'warning' : 'danger'}" style="margin-bottom:16px">
@@ -770,7 +1482,11 @@ function renderQuiz() {
 
   const question = t.quiz[q.index];
   const total = t.quiz.length;
-  const pct = Math.round((q.index + (q.revealed ? 1 : 0)) / total * 100);
+  const selected = q.answers[q.index] ?? q.selected;
+  const revealed = selected != null && q.answers[q.index] != null;
+  const answeredCount = q.answers.filter(a => a != null).length;
+  const pct = Math.round(answeredCount / total * 100);
+  const feedbackKind = q.feedback && q.feedback.index === q.index ? q.feedback.kind : null;
 
   return `
     <div class="quiz-top">
@@ -780,45 +1496,49 @@ function renderQuiz() {
     </div>
 
     <div class="quiz-body">
-      <div class="quiz-num">Soru ${q.index + 1} · ${escapeHtml(t.title)}</div>
-      <div class="quiz-q" data-inline-tex>${escapeHtml(question.q)}</div>
+      <div class="quiz-num">Soru ${q.index + 1} · ${formatRichText(t.title)}</div>
+      <div class="quiz-q" data-inline-tex>${formatRichText(question.q)}</div>
+
+      ${feedbackKind ? `
+        <div class="quiz-alert ${feedbackKind}">
+          ${feedbackKind === 'correct' ? '✓ Doğru cevap! Sıradaki soruya geçiliyor.' : '✗ Yanlış cevap. Doğru cevap aşağıda işaretlendi.'}
+        </div>
+      ` : ''}
 
       <div class="options">
         ${question.opt.map((opt, i) => {
           let cls = 'option';
-          if (q.revealed) {
+          if (revealed) {
             if (i === question.a) cls += ' correct';
-            else if (i === q.selected) cls += ' wrong';
-          } else if (q.selected === i) cls += ' selected';
+            else if (i === selected) cls += ' wrong';
+          } else if (selected === i) cls += ' selected';
 
           const key = String.fromCharCode(65 + i); // A, B, C, D
           return `
-            <button class="${cls}" ${q.revealed ? 'disabled' : ''} data-act="quiz-select" data-idx="${i}">
+            <button class="${cls}" ${revealed ? 'disabled' : ''} data-act="quiz-select" data-idx="${i}">
               <div class="key">${key}</div>
-              <div data-inline-tex>${escapeHtml(String(opt))}</div>
+              <div data-inline-tex>${formatRichText(String(opt))}</div>
             </button>
           `;
         }).join('')}
       </div>
 
-      ${q.revealed ? `
-        <div class="feedback ${q.selected === question.a ? 'correct' : 'wrong'}">
+      ${revealed ? `
+        <div class="feedback ${selected === question.a ? 'correct' : 'wrong'}">
           <div class="head">
-            ${q.selected === question.a ? '✓ Doğru!' : '✗ Yanlış'}
+            ${selected === question.a ? '✓ Doğru!' : '✗ Yanlış'}
           </div>
-          <div class="copy">
-            <span data-tex="${escapeAttr(question.e)}" data-display="false"></span>
-          </div>
-          <div class="xp">${q.selected === question.a ? '+50 XP' : '+5 XP (deneme bonusu)'}</div>
+          <div class="copy" data-inline-tex>${formatRichText(question.e)}</div>
+          <div class="xp">${selected === question.a ? '+50 XP' : '+5 XP (deneme bonusu)'}</div>
         </div>
-        <button class="btn btn-primary btn-block" style="margin-top:var(--space-4)" data-act="quiz-next">
-          ${q.index + 1 < total ? 'Sonraki Soru →' : 'Sonuçları Gör'}
+      ` : ''}
+
+      <div class="quiz-nav">
+        <button class="btn btn-ghost" data-act="quiz-prev" ${q.index === 0 ? 'disabled' : ''}>← Önceki</button>
+        <button class="btn btn-primary" data-act="quiz-next" ${!revealed ? 'disabled' : ''}>
+          ${q.index + 1 < total ? 'Sonraki →' : 'Sonuçları Gör'}
         </button>
-      ` : `
-        <button class="btn btn-primary btn-block" data-act="quiz-check" ${q.selected == null ? 'disabled' : ''}>
-          Kontrol Et
-        </button>
-      `}
+      </div>
     </div>
   `;
 }
@@ -1015,8 +1735,8 @@ function renderTopicsIndex() {
           const isDone = state.progress.completed.includes(t.id);
           const score = state.progress.scores[t.id];
           return `
-            <div class="topic-row" data-act="open-topic" data-id="${t.id}">
-              <div class="num" style="color:${u.color}">${t.id}</div>
+            <div class="topic-row quick-topic-row" data-act="open-topic" data-id="${t.id}" style="--u-color:${u.color}">
+              <div class="num">${t.id}</div>
               <div class="info">
                 <div class="title">${escapeHtml(t.title)}</div>
                 <div class="meta">
@@ -1076,7 +1796,7 @@ function renderProfile() {
         <button class="topic-row" style="background:transparent;border:none;width:100%" data-act="reset-confirm">
           <div class="info">
             <div class="title" style="color:var(--danger)">Tüm ilerlemeyi sıfırla</div>
-            <div class="meta">Demo durumuna geri dön</div>
+            <div class="meta">XP, rozet, skor ve tamamlanan konuları temizle</div>
           </div>
         </button>
       </div>
@@ -1101,7 +1821,7 @@ function renderTabBar() {
     { id: 'profile',   label: 'Profil',    icon: ICON.user }
   ];
   const active = ['dashboard'].includes(state.screen) ? 'dashboard'
-              : ['unit','topic','topics'].includes(state.screen) ? 'topics'
+              : ['unit','topic','topics','quiz'].includes(state.screen) ? 'topics'
               : ['progress'].includes(state.screen) ? 'progress'
               : 'profile';
 
@@ -1135,8 +1855,7 @@ function render() {
     default:          inner = renderDashboard();
   }
 
-  const showTab = state.screen !== 'quiz';
-  app.innerHTML = `<div class="screen">${inner}</div>${showTab ? renderTabBar() : ''}${renderGeometryViewer()}`;
+  app.innerHTML = `<div class="screen">${inner}</div>${renderTabBar()}${renderGeometryViewer()}`;
   document.body.classList.toggle('geometry-viewer-open', Boolean(state.geometryViewer));
 
   // render KaTeX
@@ -1168,6 +1887,18 @@ document.addEventListener('click', e => {
       }
       render();
       break;
+    case 'number-sim-select':
+      handleNumberSimSelect(idx);
+      break;
+    case 'number-sim-place':
+      handleNumberSimPlace(target.dataset.zone);
+      break;
+    case 'number-line-select':
+      handleNumberLineSelect(idx);
+      break;
+    case 'number-line-place':
+      handleNumberLinePlace(target.dataset.interval);
+      break;
     case 'back':
       if (to === 'unit') go('unit', { unitId: id });
       else go(to || 'dashboard');
@@ -1180,53 +1911,22 @@ document.addEventListener('click', e => {
       break;
     case 'start-quiz': startQuiz(id); break;
     case 'quiz-select':
-      if (state.quiz.revealed) return;
-      state.quiz.selected = idx;
-      render();
+      answerQuizQuestion(idx);
       break;
     case 'quiz-check':
-      if (state.quiz.selected == null) return;
-      state.quiz.revealed = true;
-      state.quiz.answers.push(state.quiz.selected);
-      // immediate XP
-      const tq = findTopic(state.quiz.topicId).quiz[state.quiz.index];
-      const correct = state.quiz.selected === tq.a;
-      state.progress.xp += correct ? 50 : 5;
-      saveProgress();
-      render();
+      if (state.quiz.selected != null) answerQuizQuestion(state.quiz.selected);
       break;
     case 'quiz-next':
+      if (state.quiz.answers[state.quiz.index] == null) return;
       const total = findTopic(state.quiz.topicId).quiz.length;
-      if (state.quiz.index + 1 < total) {
-        state.quiz.index++;
-        state.quiz.selected = null;
-        state.quiz.revealed = false;
-        render();
-      } else {
-        // finished
-        const q = state.quiz;
-        const t = findTopic(q.topicId);
-        const correctCount = q.answers.filter((a, i) => a === t.quiz[i].a).length;
-        const score = Math.round(correctCount / t.quiz.length * 100);
-        state.progress.scores[t.id] = score;
-        // perfect bonus
-        if (correctCount === t.quiz.length) state.progress.xp += 100;
-        // remove from weak if score is good
-        if (score >= 80) state.progress.weak = state.progress.weak.filter(id => id !== t.id);
-        else if (!state.progress.weak.includes(t.id)) state.progress.weak.push(t.id);
-        // mark completed
-        if (!state.progress.completed.includes(t.id)) {
-          state.progress.completed.push(t.id);
-          state.progress.xp += 200;
-        }
-        q.finished = true;
-        saveProgress();
-        checkBadges();
-        render();
-      }
+      if (state.quiz.index + 1 < total) moveQuizTo(state.quiz.index + 1);
+      else finishQuiz();
+      break;
+    case 'quiz-prev':
+      if (state.quiz.index > 0) moveQuizTo(state.quiz.index - 1);
       break;
     case 'retry-quiz': startQuiz(state.quiz.topicId); break;
-    case 'finish-quiz': go('topic', { topicId: state.quiz.topicId }); state.quiz = null; break;
+    case 'finish-quiz': clearQuizAutoAdvance(); go('topic', { topicId: state.quiz.topicId }); state.quiz = null; break;
     case 'geometry-close':
       closeGeometryViewer();
       break;
@@ -1238,6 +1938,7 @@ document.addEventListener('click', e => {
       break;
     case 'close-quiz':
       if (confirm('Quiz\'i kapatmak istediğinden emin misin? İlerleme kaybolur.')) {
+        clearQuizAutoAdvance();
         go('topic', { topicId: state.quiz.topicId });
         state.quiz = null;
       }
@@ -1246,7 +1947,7 @@ document.addEventListener('click', e => {
       window.openTweaks && window.openTweaks();
       break;
     case 'reset-confirm':
-      if (confirm('Tüm ilerleme silinecek ve demo durumuna dönülecek. Emin misin?')) {
+      if (confirm('Tüm ilerleme silinecek. XP, rozet, skor ve tamamlanan konular sıfırlanacak. Emin misin?')) {
         resetProgress();
         showToast('İlerleme sıfırlandı', 'success');
         go('dashboard');
