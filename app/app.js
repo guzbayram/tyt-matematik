@@ -1222,7 +1222,7 @@ function renderTopic() {
   const score = state.progress.scores[t.id];
 
   let body = '';
-  if (t.cards && t.cards.length) {
+  if (t.cards && t.cards.length && state.topicTab === 'theory') {
     body = `
       <div class="tab-content">
         <div class="callout info">
