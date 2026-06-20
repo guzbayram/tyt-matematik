@@ -332,6 +332,8 @@
 
 <script>
   const TWEAK_KEY = 'tyt_matematik_tweaks';
+  const AUTH_KEY = 'tyt_matematik_auth_v1';
+  const PROGRESS_KEY = 'tyt_matematik_progress_v1';
 
   function readTheme() {
     try {
@@ -395,6 +397,19 @@
     field.classList.add('error');
   }
 
+  function saveSession(username) {
+    localStorage.setItem(AUTH_KEY, JSON.stringify({
+      username,
+      signedInAt: new Date().toISOString()
+    }));
+
+    try {
+      const progress = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
+      progress.name = username;
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    } catch (e) {}
+  }
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     let valid = true;
@@ -408,6 +423,7 @@
     status.classList.remove('show');
 
     setTimeout(() => {
+      saveSession(userInput.value.trim());
       spinner.style.display = 'none';
       status.classList.add('show');
       window.location.href = 'index.html';

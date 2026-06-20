@@ -7,6 +7,26 @@
 // ─────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'tyt_matematik_progress_v1';
+const AUTH_KEY = 'tyt_matematik_auth_v1';
+
+function getAuthUser() {
+  try {
+    const stored = localStorage.getItem(AUTH_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch (e) {}
+  return null;
+}
+
+function ensureAuthenticated() {
+  const user = getAuthUser();
+  if (!user || !user.username) {
+    window.location.replace('login.html');
+    throw new Error('Authentication required');
+  }
+  return user;
+}
+
+const AUTH_USER = ensureAuthenticated();
 
 const BADGES = [
   { id: 'starter',       name: 'Başlangıç',       desc: '1 konu tamamla', icon: '🎯', test: p => p.completed.length >= 1 },
@@ -27,7 +47,7 @@ const LEVELS = [
   { id: 5, name: 'TYT Şampiyonu',       min: 5000, max: 99999 }
 ];
 
-function defaultProgress() {
+function defaultProgress(name = 'Öğrenci') {
   return {
     completed: [...DEMO_COMPLETED],
     scores: { ...DEMO_SCORES },
@@ -36,7 +56,7 @@ function defaultProgress() {
     streak: 5,
     badges: ['starter', 'streak_7'],
     lastSession: new Date().toISOString().slice(0, 10),
-    name: 'Öğrenci'
+    name
   };
 }
 
@@ -71,9 +91,13 @@ let quizAutoAdvanceTimer = null;
 function loadProgress() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const progress = JSON.parse(stored);
+      if (AUTH_USER?.username) progress.name = AUTH_USER.username;
+      return { ...defaultProgress(AUTH_USER?.username || 'Öğrenci'), ...progress };
+    }
   } catch (e) {}
-  return defaultProgress();
+  return defaultProgress(AUTH_USER?.username || 'Öğrenci');
 }
 
 function saveProgress() {
@@ -1810,6 +1834,18 @@ function renderProfile() {
     </div>
 
     <div class="section">
+      <div class="section-title"><span>Oturum</span></div>
+      <div class="card" style="padding:6px">
+        <button class="topic-row" style="background:transparent;border:none;width:100%" data-act="logout">
+          <div class="info">
+            <div class="title" style="color:var(--danger)">Çıkış Yap</div>
+            <div class="meta">Bu cihazdaki oturumu kapat</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
       <div style="text-align:center;color:var(--text-tertiary);font-size:var(--text-xs);padding:20px 0">
         TYT Matematik · v1.0<br>
         125 konu · 4 ünite · ${BADGES.length} rozet
@@ -1962,6 +1998,10 @@ document.addEventListener('click', e => {
         showToast('İlerleme sıfırlandı', 'success');
         go('dashboard');
       }
+      break;
+    case 'logout':
+      localStorage.removeItem(AUTH_KEY);
+      window.location.href = 'login.html';
       break;
   }
 });
