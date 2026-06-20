@@ -56,7 +56,8 @@ function defaultProgress(name = 'Öğrenci') {
     streak: 5,
     badges: ['starter', 'streak_7'],
     lastSession: new Date().toISOString().slice(0, 10),
-    name
+    name,
+    soundEnabled: true
   };
 }
 
@@ -69,7 +70,8 @@ function emptyProgress(name = 'Öğrenci') {
     streak: 0,
     badges: [],
     lastSession: new Date().toISOString().slice(0, 10),
-    name
+    name,
+    soundEnabled: true
   };
 }
 
@@ -108,7 +110,9 @@ function saveProgress() {
 
 function resetProgress() {
   const name = state.progress?.name || 'Öğrenci';
+  const soundEnabled = state.progress?.soundEnabled !== false;
   state.progress = emptyProgress(name);
+  state.progress.soundEnabled = soundEnabled;
   state.quiz = null;
   state.numberSetSim = { selected: 0, placed: {}, feedback: null };
   state.numberLineSim = { selected: 0, placed: {}, feedback: null };
@@ -1008,6 +1012,7 @@ function clearQuizAutoAdvance() {
 }
 
 function playQuizFeedbackSound(correct) {
+  if (state.progress.soundEnabled === false) return;
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
@@ -1836,6 +1841,15 @@ function renderProfile() {
     <div class="section">
       <div class="section-title"><span>Oturum</span></div>
       <div class="card" style="padding:6px">
+        <button class="topic-row" style="background:transparent;border:none;width:100%" data-act="toggle-sound">
+          <div class="info">
+            <div class="title">Quiz Sesleri</div>
+            <div class="meta">Doğru ve yanlış cevaplarda sesli uyarı</div>
+          </div>
+          <div class="state sound-state ${state.progress.soundEnabled === false ? 'off' : 'on'}">
+            ${state.progress.soundEnabled === false ? 'Kapalı' : 'Açık'}
+          </div>
+        </button>
         <button class="topic-row" style="background:transparent;border:none;width:100%" data-act="logout">
           <div class="info">
             <div class="title" style="color:var(--danger)">Çıkış Yap</div>
@@ -1998,6 +2012,12 @@ document.addEventListener('click', e => {
         showToast('İlerleme sıfırlandı', 'success');
         go('dashboard');
       }
+      break;
+    case 'toggle-sound':
+      state.progress.soundEnabled = state.progress.soundEnabled === false;
+      saveProgress();
+      showToast(state.progress.soundEnabled ? 'Quiz sesleri açıldı' : 'Quiz sesleri kapatıldı', 'success');
+      render();
       break;
     case 'logout':
       localStorage.removeItem(AUTH_KEY);
