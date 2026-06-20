@@ -747,7 +747,8 @@ function renderInequalityVisuals(items) {
 
 function renderExampleStepContent(step) {
   if (typeof step === 'string') {
-    return `<span data-tex="${escapeAttr(step)}" data-display="false"></span>`;
+    const tex = step.startsWith('$') && step.endsWith('$') ? step.slice(1, -1) : step;
+    return `<span data-tex="${escapeAttr(tex)}" data-display="false"></span>`;
   }
   const text = step.text ? `<div>${formatRichText(step.text)}</div>` : '';
   const interval = step.intervalLine ? renderIntervalLines([step.intervalLine]) : '';
@@ -1474,8 +1475,8 @@ function renderTopic() {
           <div style="font-size:48px;margin-bottom:12px">🎯</div>
           <h2 style="font-size:var(--text-xl);font-weight:700;margin-bottom:6px">${t.quiz.length} soruluk quiz</h2>
           <div style="color:var(--text-secondary);font-size:var(--text-sm);margin-bottom:20px">
-            Her doğru +50 XP · Sayfa başında kazanabileceğin: <b style="color:var(--xp-gold)">+${t.quiz.length * 50} XP</b>
-            ${score === 100 ? '' : '<br>Tüm soruları doğru yaparsan: <b style="color:var(--xp-gold)">+100 XP bonus</b>'}
+            Her doğru +50 XP · Sayfa başında kazanabileceğin: <b style="color:var(--xp-text)">+${t.quiz.length * 50} XP</b>
+            ${score === 100 ? '' : '<br>Tüm soruları doğru yaparsan: <b style="color:var(--xp-text)">+100 XP bonus</b>'}
           </div>
           ${score != null ? `
             <div class="chip ${score >= 80 ? 'success' : score >= 60 ? 'warning' : 'danger'}" style="margin-bottom:16px">
