@@ -816,7 +816,10 @@ a  { color: inherit; text-decoration: none; }
   text-align: center;
   font-size: 1.05rem;
   color: var(--text-primary);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y pinch-zoom;
   box-sizing: border-box;
 }
 .rule .formula-plain {
@@ -2485,7 +2488,7 @@ a  { color: inherit; text-decoration: none; }
 .katex { color: inherit; font-size: 1.05em; }
 .katex-display { margin: 0; overflow: visible; padding: 4px 0; }
 .katex-display > .katex { white-space: nowrap; }
-.rule .formula .katex-display { font-size: clamp(0.54rem, 2.35vw, 1.05rem); }
+.rule .formula .katex-display { font-size: clamp(0.92rem, 2.35vw, 1.05rem); }
 .rule .formula .formula-scaled {
   display: inline-block;
   transform: scale(var(--formula-scale, 1));
@@ -2498,4 +2501,49 @@ a  { color: inherit; text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
   :root { --anim-mult: 0; }
   * { animation-duration: 0s !important; transition-duration: 0s !important; }
+}
+
+@media (max-width: 520px) {
+  .tab-content {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+
+  .rule,
+  .facts,
+  .callout {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+
+  .rule h3,
+  .facts h3,
+  .callout > div > strong {
+    font-size: var(--text-md);
+    line-height: 1.35;
+  }
+
+  .rule .tip,
+  .rule-body-text,
+  .plain-formula-text,
+  .formula-label-copy,
+  .numbered-main,
+  .numbered-sub-lines,
+  .statement-main,
+  .callout,
+  .callout .copy,
+  .warning-list li,
+  .facts li {
+    font-size: var(--text-md);
+    line-height: 1.6;
+  }
+
+  .rule .formula {
+    font-size: var(--text-md);
+    padding-inline: var(--space-3);
+  }
+
+  .rule .formula .katex-display,
+  .numbered-math-lines .katex,
+  .statement-math-lines .katex {
+    font-size: clamp(1rem, 3.2vw, 1.12rem);
+  }
 }
