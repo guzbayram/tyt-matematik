@@ -89,6 +89,33 @@ let state = {
 };
 
 let quizAutoAdvanceTimer = null;
+let quizAudioCtx = null;
+
+function getQuizAudioContext() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!quizAudioCtx) quizAudioCtx = new AudioCtx();
+  if (quizAudioCtx.state === 'suspended') {
+    quizAudioCtx.resume().catch(() => {});
+  }
+  return quizAudioCtx;
+}
+
+function unlockQuizAudio() {
+  if (state.progress?.soundEnabled === false) return;
+  const ctx = getQuizAudioContext();
+  if (!ctx) return;
+  try {
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.connect(ctx.destination);
+    const osc = ctx.createOscillator();
+    osc.frequency.value = 1;
+    osc.connect(gain);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.01);
+  } catch (e) {}
+}
 
 function loadProgress() {
   try {
@@ -1014,21 +1041,20 @@ function clearQuizAutoAdvance() {
 function playQuizFeedbackSound(correct) {
   if (state.progress.soundEnabled === false) return;
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = getQuizAudioContext();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = correct ? 'sine' : 'square';
     osc.frequency.value = correct ? 740 : 180;
+    if (correct) osc.frequency.exponentialRampToValueAtTime(980, ctx.currentTime + 0.12);
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.22);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.28);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start();
-    osc.stop(ctx.currentTime + 0.24);
-    setTimeout(() => ctx.close().catch(() => {}), 360);
+    osc.stop(ctx.currentTime + 0.3);
   } catch (e) {}
 }
 
@@ -1919,6 +1945,10 @@ function render() {
   renderKatex(app);
   centerGeometryImages(app);
 }
+
+['pointerdown', 'touchstart', 'click'].forEach(eventName => {
+  document.addEventListener(eventName, unlockQuizAudio, { once: true, passive: true });
+});
 
 // ─────────────────────────────────────────────────────────────
 // EVENT HANDLING
