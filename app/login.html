@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TYT Matematik — Giriş Yap</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap">
+
+<style>
+  :root {
+    --bg: #08081A;
+    --bg-2: #0F0E2A;
+    --card-bg: rgba(255,255,255,0.04);
+    --field-bg: rgba(255,255,255,0.05);
+    --field-focus-bg: rgba(124,119,255,0.08);
+    --text: #ECEAFE;
+    --text-sec: #8E8BB0;
+    --text-on-accent: #08081A;
+    --accent: #7C77FF;
+    --accent-2: #5EE9B5;
+    --danger: #FF6B6B;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.18);
+    --shadow: 0 40px 60px -30px rgba(0,0,0,0.6);
+    font-family: 'Nunito', system-ui, sans-serif;
+  }
+  :root[data-theme="light"] {
+    --bg: #F6F4FB;
+    --bg-2: #FFFFFF;
+    --card-bg: rgba(255,255,255,0.86);
+    --field-bg: rgba(20,18,43,0.04);
+    --field-focus-bg: rgba(124,119,255,0.08);
+    --text: #14122B;
+    --text-sec: #5E5A7D;
+    --text-on-accent: #FFFFFF;
+    --border: rgba(20,18,43,0.10);
+    --border-strong: rgba(20,18,43,0.18);
+    --shadow: 0 28px 56px -34px rgba(20,18,43,0.35);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  body {
+    background:
+      radial-gradient(60% 50% at 90% -10%, rgba(124,119,255,0.20), transparent 60%),
+      radial-gradient(50% 40% at -10% 100%, rgba(94,233,181,0.12), transparent 70%),
+      var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+  }
+
+  .auth {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: rise 560ms cubic-bezier(.2,.8,.2,1);
+  }
+  .top-actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 18px;
+  }
+  .theme-toggle {
+    min-height: 42px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--card-bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 0 14px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform 160ms, border-color 160ms, background 160ms;
+  }
+  .theme-toggle:hover {
+    transform: translateY(-1px);
+    border-color: var(--border-strong);
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .auth { animation: none; }
+  }
+
+  .logo-mark {
+    width: 76px;
+    height: 76px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, var(--accent), #5852D9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--bg);
+    color: var(--text-on-accent);
+    box-shadow: 0 16px 36px -10px rgba(124,119,255,0.55);
+    margin-bottom: 20px;
+  }
+
+  .auth h1 {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    text-align: center;
+  }
+  .auth .tagline {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--text-sec);
+    text-align: center;
+    max-width: 280px;
+    line-height: 1.5;
+  }
+  .auth .tagline .grad {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+  }
+
+  .card {
+    width: 100%;
+    margin-top: 32px;
+    padding: 28px 24px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow);
+  }
+
+  .group { margin-bottom: 18px; }
+  .group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-sec);
+    margin-bottom: 8px;
+  }
+  .field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--field-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    transition: border-color 160ms, box-shadow 160ms, background 160ms;
+  }
+  .field:focus-within {
+    border-color: var(--accent);
+    background: var(--field-focus-bg);
+    box-shadow: 0 0 0 4px rgba(124,119,255,0.14);
+  }
+  .field.error {
+    border-color: var(--danger);
+    animation: shake 380ms;
+  }
+  @keyframes shake {
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+  }
+  .field svg.lead-ico {
+    flex-shrink: 0;
+    margin-left: 14px;
+    color: var(--text-sec);
+  }
+  .field:focus-within svg.lead-ico { color: var(--accent); }
+  .field input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 14px 14px;
+  }
+  .field input::placeholder { color: var(--text-sec); font-weight: 500; }
+  .field .eye-btn {
+    flex-shrink: 0;
+    margin-right: 8px;
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: transparent;
+    color: var(--text-sec);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    transition: color 140ms, background 140ms;
+  }
+  .field .eye-btn:hover { color: var(--text); background: var(--field-bg); }
+
+  .row-end {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -6px;
+    margin-bottom: 22px;
+  }
+  .row-end a {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .row-end a:hover { color: var(--accent-2); }
+
+  .submit-btn {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--accent), #5852D9);
+    color: var(--text-on-accent);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 14px 30px -10px rgba(124,119,255,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 160ms, box-shadow 160ms, opacity 160ms;
+  }
+  .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 18px 36px -10px rgba(124,119,255,0.6); }
+  .submit-btn:active { transform: translateY(0); }
+  .submit-btn:disabled { opacity: 0.7; cursor: default; transform: none; }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(255,255,255,0.35);
+    border-top-color: var(--text-on-accent);
+    animation: spin 700ms linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .signup {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-sec);
+  }
+  .signup a {
+    color: var(--accent-2);
+    font-weight: 800;
+    text-decoration: none;
+  }
+  .signup a:hover { text-decoration: underline; }
+
+  .status {
+    margin-top: 16px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--accent-2);
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 200ms, transform 200ms;
+  }
+  .status.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+  <main class="auth">
+    <div class="top-actions">
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Temayı değiştir">Açık Tema</button>
+    </div>
+
+    <div class="logo-mark">∑</div>
+    <h1>TYT Matematik</h1>
+    <p class="tagline">Korkma, anla. <span class="grad">Kaldığın yerden devam et.</span></p>
+
+    <form class="card" id="login-form" novalidate>
+      <div class="group">
+        <label for="username">Kullanıcı Adı</label>
+        <div class="field" id="username-field">
+          <svg class="lead-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input type="text" id="username" name="username" placeholder="kullanici_adi" autocomplete="username">
+        </div>
+      </div>
+
+      <div class="group">
+        <label for="password">Şifre</label>
+        <div class="field" id="password-field">
+          <svg class="lead-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="eye-btn" id="toggle-pw" aria-label="Şifreyi göster">
+            <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="row-end">
+        <a href="#">Şifremi Unuttum</a>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submit-btn">
+        <span class="spinner" id="spinner"></span>
+        <span id="submit-label">Giriş Yap</span>
+      </button>
+
+      <div class="status" id="status">Giriş başarılı, yönlendiriliyorsun.</div>
+    </form>
+
+    <p class="signup">Hesabın yok mu? <a href="#">Hemen Kaydol</a></p>
+  </main>
+
+<script>
+  const TWEAK_KEY = 'tyt_matematik_tweaks';
+
+  function readTheme() {
+    try {
+      const tweaks = JSON.parse(localStorage.getItem(TWEAK_KEY) || '{}');
+      return tweaks.theme === 'light' ? 'light' : 'dark';
+    } catch (e) {
+      return 'dark';
+    }
+  }
+
+  function saveTheme(theme) {
+    let tweaks = {};
+    try {
+      tweaks = JSON.parse(localStorage.getItem(TWEAK_KEY) || '{}');
+    } catch (e) {}
+    tweaks.theme = theme;
+    localStorage.setItem(TWEAK_KEY, JSON.stringify(tweaks));
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'light' ? 'Koyu Tema' : 'Açık Tema';
+  }
+
+  applyTheme(readTheme());
+
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyTheme(next);
+    saveTheme(next);
+  });
+
+  // Password visibility toggle
+  const pwInput = document.getElementById('password');
+  const toggleBtn = document.getElementById('toggle-pw');
+  const eyeIcon = document.getElementById('eye-icon');
+  const eyeOpen = '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/>';
+  const eyeClosed = '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.5 21.5 0 0 1 5.06-5.94"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a21.6 21.6 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/>';
+
+  toggleBtn.addEventListener('click', () => {
+    const isPw = pwInput.type === 'password';
+    pwInput.type = isPw ? 'text' : 'password';
+    eyeIcon.innerHTML = isPw ? eyeClosed : eyeOpen;
+    toggleBtn.setAttribute('aria-label', isPw ? 'Şifreyi gizle' : 'Şifreyi göster');
+  });
+
+  // Basic submit handling (UI preview only — no backend wired up)
+  const form = document.getElementById('login-form');
+  const userField = document.getElementById('username-field');
+  const pwField = document.getElementById('password-field');
+  const userInput = document.getElementById('username');
+  const submitBtn = document.getElementById('submit-btn');
+  const spinner = document.getElementById('spinner');
+  const submitLabel = document.getElementById('submit-label');
+  const status = document.getElementById('status');
+
+  function flagError(field) {
+    field.classList.remove('error');
+    void field.offsetWidth;
+    field.classList.add('error');
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    let valid = true;
+    if (!userInput.value.trim()) { flagError(userField); valid = false; }
+    if (!pwInput.value.trim()) { flagError(pwField); valid = false; }
+    if (!valid) return;
+
+    submitBtn.disabled = true;
+    spinner.style.display = 'inline-block';
+    submitLabel.textContent = 'Giriş yapılıyor…';
+    status.classList.remove('show');
+
+    setTimeout(() => {
+      spinner.style.display = 'none';
+      status.classList.add('show');
+      window.location.href = 'index.html';
+    }, 900);
+  });
+</script>
+
+</body>
+</html>

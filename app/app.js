@@ -1780,6 +1780,13 @@ function renderProfile() {
     <div class="section">
       <div class="section-title"><span>Tema ve Görünüm</span></div>
       <div class="card" style="padding:6px">
+        <button class="topic-row" style="background:transparent;border:none;width:100%" data-act="open-login">
+          <div class="info">
+            <div class="title">Giriş Sayfası</div>
+            <div class="meta">Dark / light tema destekli giriş ekranı</div>
+          </div>
+          <div class="state" style="background:var(--bg-glass);color:var(--text-tertiary)">${ICON.arrow}</div>
+        </button>
         <button class="topic-row" style="background:transparent;border:none;width:100%" data-act="open-tweaks">
           <div class="info">
             <div class="title">Tweaks Paneli</div>
@@ -1945,6 +1952,9 @@ document.addEventListener('click', e => {
       break;
     case 'open-tweaks':
       window.openTweaks && window.openTweaks();
+      break;
+    case 'open-login':
+      window.location.href = 'login.html';
       break;
     case 'reset-confirm':
       if (confirm('Tüm ilerleme silinecek. XP, rozet, skor ve tamamlanan konular sıfırlanacak. Emin misin?')) {
